@@ -4,6 +4,7 @@ import { db } from '@mizu/minato-repository'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { jwt } from 'better-auth/plugins'
+import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 export const auth = betterAuth({
   appName: 'Minato',
@@ -34,6 +35,7 @@ export const auth = betterAuth({
         expirationTime: '1d',
       },
     }),
+    tanstackStartCookies(),
   ],
   trustedOrigins: minatoEnvConfig.auth.trustedOrigins,
   secret: minatoEnvConfig.auth.secret,

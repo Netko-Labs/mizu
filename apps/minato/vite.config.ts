@@ -16,4 +16,22 @@ export default defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  optimizeDeps: {
+    exclude: [
+      'ssh2',
+      'cpu-features',
+      'dockerode',
+      '@mizu/minato-service',
+      '@mizu/minato-repository',
+    ],
+  },
+  ssr: {
+    external: [
+      'ssh2',
+      'cpu-features',
+      'dockerode',
+      '@mizu/minato-service',
+      '@mizu/minato-repository',
+    ],
+  },
 })

@@ -38,6 +38,7 @@ yarn-error.log*
 
 # Generated
 generated
+tmp
 
 # Tanstack
 .tanstack

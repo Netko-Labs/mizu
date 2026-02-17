@@ -1,7 +1,7 @@
 {
   "short_name": "Mizu",
-  "name": "Mizu - Self-hosting Platform",
-  "description": "Deploy your apps like water flows — naturally, effortlessly.",
+  "name": "Mizu — Self-hosting Platform",
+  "description": "Deploy your apps like water flows. A visual self-hosting platform for macOS home labs.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -21,6 +21,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#06b6d4",
-  "background_color": "#0f172a"
+  "theme_color": "#000000",
+  "background_color": "#000000"
 }

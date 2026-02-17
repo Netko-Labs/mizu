@@ -4,18 +4,27 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./templates": "./src/templates/index.ts"
   },
   "dependencies": {
+    "@mizu/logger": "workspace:*",
     "@mizu/minato-config": "workspace:*",
     "@mizu/minato-domain": "workspace:*",
     "@mizu/minato-repository": "workspace:*",
-    "@mizu/logger": "workspace:*",
     "@mizu/typescript-config": "workspace:*",
     "@openrouter/ai-sdk-provider": "^1.4.1",
     "ai": "^5.0.0-canary.14",
     "better-auth": "^1.4.5",
+    "dockerode": "^4.0.5",
     "drizzle-orm": "^0.44.6",
-    "jose": "^6.0.11"
+    "jose": "^6.0.11",
+    "js-yaml": "^4.1.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.35",
+    "@types/js-yaml": "^4.0.9"
   }
 }

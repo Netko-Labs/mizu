@@ -1,0 +1,25 @@
+{
+    email ${MIZU_EMAIL}
+    admin off
+}
+
+${MIZU_DOMAIN} {
+    reverse_proxy mizu-app:3000
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # Compress responses
+    encode gzip zstd
+
+    # Logs
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+}

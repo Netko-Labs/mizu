@@ -47,7 +47,8 @@
                   "kind": "typeProperty",
                   "scope": "any"
                 },
-                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"]
+                // snake_case allowed for docker-compose types
+                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE", "snake_case"]
               },
               {
                 "selector": {
@@ -112,6 +113,7 @@
       "!**/generated",
       "!**/dist",
       "!**/components/ui",
+      "!**/components/canvas",
       "!**/.tanstack",
       "!**/.nitro",
       "!**/.output",

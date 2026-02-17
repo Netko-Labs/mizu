@@ -1,10 +1,24 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
 import { minatoEnvConfig } from '@mizu/minato-config'
 
 const MASTER_KEY = minatoEnvConfig.app.encryptionKey
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
-const KEY_BUFFER = Buffer.from(MASTER_KEY, 'hex')
+
+/**
+ * Derive a 32-byte key from the master key.
+ * Accepts either a 64-char hex string or an arbitrary string (hashed with SHA-256).
+ */
+function deriveKeyBuffer(key: string): Buffer {
+  // If it's a valid 64-char hex string, use it directly
+  if (/^[0-9a-f]{64}$/i.test(key)) {
+    return Buffer.from(key, 'hex')
+  }
+  // Otherwise, derive a 32-byte key via SHA-256
+  return createHash('sha256').update(key).digest()
+}
+
+const KEY_BUFFER = deriveKeyBuffer(MASTER_KEY)
 
 export const encrypt = (text: string) => {
   const iv = randomBytes(IV_LENGTH)

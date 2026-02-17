@@ -9,21 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TodosRouteImport } from './routes/todos'
-import { Route as ChatRouteImport } from './routes/chat'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthWhoamiRouteImport } from './routes/_auth/whoami'
+import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
+import { Route as AuthHomeRouteImport } from './routes/_auth/home'
+import { Route as AuthProjectsIndexRouteImport } from './routes/_auth/projects/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthProjectsSlugRouteImport } from './routes/_auth/projects/$slug'
 
-const TodosRoute = TodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChatRoute = ChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -36,6 +40,26 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthWhoamiRoute = AuthWhoamiRouteImport.update({
+  id: '/whoami',
+  path: '/whoami',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthSettingsRoute = AuthSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthHomeRoute = AuthHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProjectsIndexRoute = AuthProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
@@ -46,57 +70,94 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthProjectsSlugRoute = AuthProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/chat': typeof ChatRoute
-  '/todos': typeof TodosRoute
+  '/login': typeof LoginRoute
+  '/home': typeof AuthHomeRoute
+  '/settings': typeof AuthSettingsRoute
+  '/whoami': typeof AuthWhoamiRoute
   '/api/health': typeof ApiHealthRoute
+  '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/projects': typeof AuthProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/chat': typeof ChatRoute
-  '/todos': typeof TodosRoute
+  '/login': typeof LoginRoute
+  '/home': typeof AuthHomeRoute
+  '/settings': typeof AuthSettingsRoute
+  '/whoami': typeof AuthWhoamiRoute
   '/api/health': typeof ApiHealthRoute
+  '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/projects': typeof AuthProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/chat': typeof ChatRoute
-  '/todos': typeof TodosRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_auth/home': typeof AuthHomeRoute
+  '/_auth/settings': typeof AuthSettingsRoute
+  '/_auth/whoami': typeof AuthWhoamiRoute
   '/api/health': typeof ApiHealthRoute
+  '/_auth/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_auth/projects/': typeof AuthProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/chat'
-    | '/todos'
+    | '/login'
+    | '/home'
+    | '/settings'
+    | '/whoami'
     | '/api/health'
+    | '/projects/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/projects'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/todos' | '/api/health' | '/api/auth/$' | '/api/trpc/$'
+  to:
+    | '/'
+    | '/login'
+    | '/home'
+    | '/settings'
+    | '/whoami'
+    | '/api/health'
+    | '/projects/$slug'
+    | '/api/auth/$'
+    | '/api/trpc/$'
+    | '/projects'
   id:
     | '__root__'
     | '/'
-    | '/chat'
-    | '/todos'
+    | '/_auth'
+    | '/login'
+    | '/_auth/home'
+    | '/_auth/settings'
+    | '/_auth/whoami'
     | '/api/health'
+    | '/_auth/projects/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/_auth/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChatRoute: typeof ChatRoute
-  TodosRoute: typeof TodosRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
@@ -104,18 +165,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/todos': {
-      id: '/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof TodosRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chat': {
-      id: '/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof ChatRouteImport
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -132,6 +193,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/whoami': {
+      id: '/_auth/whoami'
+      path: '/whoami'
+      fullPath: '/whoami'
+      preLoaderRoute: typeof AuthWhoamiRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/settings': {
+      id: '/_auth/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthSettingsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/home': {
+      id: '/_auth/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthHomeRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/projects/': {
+      id: '/_auth/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthProjectsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/api/trpc/$': {
       id: '/api/trpc/$'
       path: '/api/trpc/$'
@@ -146,13 +235,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/projects/$slug': {
+      id: '/_auth/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/projects/$slug'
+      preLoaderRoute: typeof AuthProjectsSlugRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthHomeRoute: typeof AuthHomeRoute
+  AuthSettingsRoute: typeof AuthSettingsRoute
+  AuthWhoamiRoute: typeof AuthWhoamiRoute
+  AuthProjectsSlugRoute: typeof AuthProjectsSlugRoute
+  AuthProjectsIndexRoute: typeof AuthProjectsIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthHomeRoute: AuthHomeRoute,
+  AuthSettingsRoute: AuthSettingsRoute,
+  AuthWhoamiRoute: AuthWhoamiRoute,
+  AuthProjectsSlugRoute: AuthProjectsSlugRoute,
+  AuthProjectsIndexRoute: AuthProjectsIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChatRoute: ChatRoute,
-  TodosRoute: TodosRoute,
+  AuthRoute: AuthRouteWithChildren,
+  LoginRoute: LoginRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
