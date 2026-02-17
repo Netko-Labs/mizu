@@ -42,10 +42,5 @@ export function transformNetworks(networks: Network[]): Record<string, ComposeNe
     result[network.name] = transformNetwork(network)
   }
 
-  // Always include a default network if none exist
-  if (Object.keys(result).length === 0) {
-    result.default = {}
-  }
-
   return result
 }

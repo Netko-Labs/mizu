@@ -1,5 +1,6 @@
 import type { Database, Service } from '@mizu/minato-domain'
 import {
+  IconApps,
   IconCopy,
   IconDatabase,
   IconEdit,
@@ -12,6 +13,7 @@ import {
   IconServer,
   IconTerminal,
   IconTrash,
+  IconX,
 } from '@tabler/icons-react'
 import { useReactFlow } from '@xyflow/react'
 import { useEffect, useRef } from 'react'
@@ -21,13 +23,21 @@ import { useCanvas } from './canvas-provider'
 interface CanvasContextMenuProps {
   findService: (id: string) => Service | undefined
   findDatabase: (id: string) => Database | undefined
-  getNodeType?: (id: string) => 'service' | 'database' | null
   onEditProperties: (nodeId: string) => void
   onNodeAction?: (
     nodeId: string,
     nodeType: 'service' | 'database' | null,
     action: PropertyAction,
   ) => void
+  serviceGroups?: Array<{ id: string; name: string }>
+  getNodeServiceGroupId?: (id: string) => string | null
+  onCreateServiceGroup?: (params?: {
+    name?: string
+    canvasPosition?: { x: number; y: number }
+    memberNodeIds?: string[]
+  }) => void
+  onAssignNodeToServiceGroup?: (nodeId: string, groupId: string | null) => void
+  onDeleteServiceGroup?: (groupId: string) => void
   onViewLogs?: (nodeId: string, nodeType: 'service' | 'database') => void
   onAddService: (params: {
     name: string
@@ -46,17 +56,19 @@ interface MenuItemProps {
   icon?: React.ReactNode
   onClick: () => void
   destructive?: boolean
+  disabled?: boolean
 }
 
-function MenuItem({ label, icon, onClick, destructive = false }: MenuItemProps) {
+function MenuItem({ label, icon, onClick, destructive = false, disabled = false }: MenuItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
         destructive
-          ? 'text-red-400 hover:bg-red-500/10'
-          : 'text-neutral-400 hover:bg-blue-500/10 hover:text-blue-300'
+          ? 'text-red-400 disabled:opacity-50 hover:bg-red-500/10'
+          : 'text-neutral-400 disabled:opacity-50 hover:bg-blue-500/10 hover:text-blue-300'
       }`}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
@@ -74,6 +86,11 @@ export function CanvasContextMenu({
   findDatabase,
   onEditProperties,
   onNodeAction,
+  serviceGroups = [],
+  getNodeServiceGroupId,
+  onCreateServiceGroup,
+  onAssignNodeToServiceGroup,
+  onDeleteServiceGroup,
   onViewLogs,
   onAddService,
   onAddDatabase,
@@ -110,6 +127,12 @@ export function CanvasContextMenu({
   const isNodeMenu = !!nodeId
   const service = nodeId && nodeType === 'service' ? findService(nodeId) : undefined
   const database = nodeId && nodeType === 'database' ? findDatabase(nodeId) : undefined
+  const selectedServiceGroup =
+    nodeId && nodeType === 'service-group' ? serviceGroups.find((group) => group.id === nodeId) : null
+  const currentGroupId =
+    nodeId && (nodeType === 'service' || nodeType === 'database')
+      ? (getNodeServiceGroupId?.(nodeId) ?? null)
+      : null
 
   const handleDuplicate = () => {
     if (!nodeId) return
@@ -129,7 +152,9 @@ export function CanvasContextMenu({
   }
 
   const handleDelete = () => {
-    if (nodeId && onNodeAction && (nodeType === 'service' || nodeType === 'database')) {
+    if (nodeId && nodeType === 'service-group' && onDeleteServiceGroup) {
+      onDeleteServiceGroup(nodeId)
+    } else if (nodeId && onNodeAction && (nodeType === 'service' || nodeType === 'database')) {
       onNodeAction(nodeId, nodeType, { type: 'delete' })
     } else if (nodeId) {
       removeNode(nodeId)
@@ -165,23 +190,29 @@ export function CanvasContextMenu({
             <div className="text-[10px] text-neutral-600">
               {nodeType === 'service'
                 ? service?.name ?? 'service'
+                : nodeType === 'service-group'
+                  ? selectedServiceGroup?.name ?? 'service group'
                 : database?.name ?? nodeType ?? 'node'}
             </div>
           </div>
 
-          <MenuItem
-            label="Edit Properties"
-            icon={<IconEdit className="size-3" />}
-            onClick={() => {
-              if (nodeId) onEditProperties(nodeId)
-              closeContextMenu()
-            }}
-          />
-          <MenuItem
-            label="Duplicate"
-            icon={<IconCopy className="size-3" />}
-            onClick={handleDuplicate}
-          />
+          {nodeType !== 'service-group' && (
+            <>
+              <MenuItem
+                label="Edit Properties"
+                icon={<IconEdit className="size-3" />}
+                onClick={() => {
+                  if (nodeId) onEditProperties(nodeId)
+                  closeContextMenu()
+                }}
+              />
+              <MenuItem
+                label="Duplicate"
+                icon={<IconCopy className="size-3" />}
+                onClick={handleDuplicate}
+              />
+            </>
+          )}
 
           {/* Service/database specific actions */}
           {(nodeType === 'service' || nodeType === 'database') && (
@@ -235,9 +266,54 @@ export function CanvasContextMenu({
             </>
           )}
 
+          {/* Service group actions for service/database nodes */}
+          {(nodeType === 'service' || nodeType === 'database') &&
+            onAssignNodeToServiceGroup &&
+            onCreateServiceGroup && (
+              <>
+                <MenuSeparator />
+                <div className="px-2.5 py-1 text-[10px] text-neutral-600">service groups</div>
+                <MenuItem
+                  label="Create Group from Node"
+                  icon={<IconApps className="size-3" />}
+                  onClick={() => {
+                    if (!nodeId) return
+                    onCreateServiceGroup({
+                      memberNodeIds: [nodeId],
+                    })
+                    closeContextMenu()
+                  }}
+                />
+                {serviceGroups.map((group) => (
+                  <MenuItem
+                    key={group.id}
+                    label={currentGroupId === group.id ? `In ${group.name}` : `Move to ${group.name}`}
+                    icon={<IconApps className="size-3" />}
+                    disabled={currentGroupId === group.id}
+                    onClick={() => {
+                      if (!nodeId) return
+                      onAssignNodeToServiceGroup(nodeId, group.id)
+                      closeContextMenu()
+                    }}
+                  />
+                ))}
+                {currentGroupId && (
+                  <MenuItem
+                    label="Remove from Group"
+                    icon={<IconX className="size-3" />}
+                    onClick={() => {
+                      if (!nodeId) return
+                      onAssignNodeToServiceGroup(nodeId, null)
+                      closeContextMenu()
+                    }}
+                  />
+                )}
+              </>
+            )}
+
           <MenuSeparator />
           <MenuItem
-            label="Delete"
+            label={nodeType === 'service-group' ? 'Delete Group' : 'Delete'}
             icon={<IconTrash className="size-3" />}
             onClick={handleDelete}
             destructive
@@ -274,6 +350,17 @@ export function CanvasContextMenu({
               closeContextMenu()
             }}
           />
+          {onCreateServiceGroup && (
+            <MenuItem
+              label="Add Service Group"
+              icon={<IconApps className="size-3" />}
+              onClick={() => {
+                const flowPosition = reactFlow.screenToFlowPosition(position)
+                onCreateServiceGroup({ canvasPosition: flowPosition })
+                closeContextMenu()
+              }}
+            />
+          )}
 
           <MenuSeparator />
           <MenuItem

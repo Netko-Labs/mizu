@@ -1,4 +1,4 @@
-import type { Database, ServiceConnection, Volume } from '@mizu/minato-domain'
+import type { Database } from '@mizu/minato-domain'
 import type { ComposeService } from '../types'
 
 /**
@@ -83,11 +83,7 @@ const DATABASE_HEALTHCHECKS: Record<string, ComposeService['healthcheck']> = {
 /**
  * Transform a Mizu database to a Docker Compose service definition.
  */
-export function transformDatabase(
-  database: Database,
-  connections: ServiceConnection[],
-  _volumes: Volume[],
-): ComposeService {
+export function transformDatabase(database: Database, commonNetworkName: string): ComposeService {
   const composeService: ComposeService = {}
 
   // Get the appropriate image
@@ -164,14 +160,7 @@ export function transformDatabase(
   }
 
   // Networks
-  const networkConnections = connections.filter(
-    (c) => c.toDatabaseId === database.id && c.targetType === 'network' && c.toNetworkId,
-  )
-  if (networkConnections.length > 0) {
-    composeService.networks = networkConnections
-      .map((c) => c.toNetworkId)
-      .filter((id): id is string => id != null)
-  }
+  composeService.networks = [commonNetworkName]
 
   // Restart policy
   composeService.restart = 'unless-stopped'

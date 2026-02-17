@@ -16,6 +16,7 @@ export function generateDockerCompose(
   options: GenerationOptions = {},
 ): string {
   const { includeComments = true, profile } = options
+  const commonNetworkName = `${manifest.project.slug}-common`
 
   // Build env groups map for service transformer
   const envGroups = new Map<string, Record<string, string>>()
@@ -30,6 +31,12 @@ export function generateDockerCompose(
     }
   }
 
+  const serviceNameById = new Map(manifest.services.map((service) => [service.id, service.name]))
+  const databaseNameById = new Map(
+    manifest.databases.map((database) => [database.id, database.name]),
+  )
+  const networkNameById = new Map(manifest.networks.map((network) => [network.id, network.name]))
+
   // Transform services
   const services: DockerComposeFile['services'] = {}
 
@@ -39,16 +46,26 @@ export function generateDockerCompose(
       manifest.connections,
       manifest.volumes,
       envGroups,
+      {
+        serviceNameById,
+        databaseNameById,
+        networkNameById,
+        commonNetworkName,
+      },
     )
   }
 
   // Transform databases to services
   for (const database of manifest.databases) {
-    services[database.name] = transformDatabase(database, manifest.connections, manifest.volumes)
+    services[database.name] = transformDatabase(database, commonNetworkName)
   }
 
   // Transform networks
-  const networks = transformNetworks(manifest.networks)
+  const customNetworks = transformNetworks(manifest.networks)
+  const networks = {
+    [commonNetworkName]: {},
+    ...customNetworks,
+  }
 
   // Transform volumes (user-defined + database volumes)
   const userVolumes = transformVolumes(manifest.volumes)
@@ -61,10 +78,7 @@ export function generateDockerCompose(
     services,
   }
 
-  // Only include networks if there are any
-  if (Object.keys(networks).length > 0) {
-    composeFile.networks = networks
-  }
+  composeFile.networks = networks
 
   // Only include volumes if there are any
   if (Object.keys(volumes).length > 0) {

@@ -11,6 +11,7 @@ import {
   type Node,
   type NodeTypes,
   type OnConnect,
+  type OnEdgesDelete,
   Panel,
   ReactFlow,
   type ReactFlowInstance,
@@ -25,9 +26,11 @@ import { ExternalServiceNode } from './nodes/external-service-node'
 import { NetworkNode } from './nodes/network-node'
 import { SecretNode } from './nodes/secret-node'
 import { ServiceNode } from './nodes/service-node'
+import { ServiceGroupNode } from './nodes/service-group-node'
 import { VolumeNode } from './nodes/volume-node'
 
 const nodeTypes: NodeTypes = {
+  'service-group': ServiceGroupNode,
   service: ServiceNode,
   database: DatabaseNode,
   volume: VolumeNode,
@@ -63,6 +66,17 @@ export interface CanvasEditorProps {
     type: 'postgres' | 'mysql' | 'redis' | 'mongodb' | 'mariadb'
     version?: string
   }) => void
+  /** Callback to persist a new service dependency edge */
+  onCreateConnection?: (params: {
+    fromServiceId: string
+    toServiceId?: string
+    toDatabaseId?: string
+    connectionType: 'depends'
+  }) => void
+  /** Callback to delete a persisted connection edge */
+  onDeleteConnection?: (connectionId: string) => void
+  /** Callback when node drag stops (for position persistence) */
+  onNodeDragStop?: (node: Node) => void
   /** Additional class names for the container */
   className?: string
   /** Whether to show the controls */
@@ -78,6 +92,9 @@ export function CanvasEditor({
   onEdgeSelect,
   onAddService,
   onAddDatabase,
+  onCreateConnection,
+  onDeleteConnection,
+  onNodeDragStop,
   className,
   showControls = true,
   showBackground = true,
@@ -131,6 +148,7 @@ export function CanvasEditor({
           sourceConfig = {
             templateId: dropData.templateId || 'custom',
             overrides: {},
+            _createAsGroup: dropData.createAsGroup === true,
           }
         } else if (sourceType === 'git') {
           sourceConfig = { repository: 'https://github.com/example/repo' }
@@ -185,26 +203,65 @@ export function CanvasEditor({
   // Handle new connection
   const handleConnect: OnConnect = useCallback(
     (params) => {
-      // Ensure source and target are defined before creating edge
       if (!params.source || !params.target) {
         return
       }
 
-      // Create a new edge with a unique ID
-      const newEdge: Edge = {
-        id: `edge-${params.source}-${params.target}-${Date.now()}`,
+      const sourceNode = nodes.find((node) => node.id === params.source)
+      const targetNode = nodes.find((node) => node.id === params.target)
+      if (!sourceNode || !targetNode || sourceNode.type !== 'service') {
+        return
+      }
+
+      if (targetNode.type !== 'service' && targetNode.type !== 'database') {
+        return
+      }
+
+      const hasConnection = edges.some(
+        (edge) => edge.source === params.source && edge.target === params.target,
+      )
+      if (hasConnection) {
+        return
+      }
+
+      addCanvasEdge({
+        id: `service-connection-local-${params.source}-${params.target}-${Date.now()}`,
         source: params.source,
         target: params.target,
         sourceHandle: params.sourceHandle ?? undefined,
         targetHandle: params.targetHandle ?? undefined,
         type: 'connection',
         data: {
-          connectionType: 'connects',
+          connectionType: 'depends',
         },
+      })
+
+      if (onCreateConnection) {
+        onCreateConnection({
+          fromServiceId: params.source,
+          toServiceId: targetNode.type === 'service' ? params.target : undefined,
+          toDatabaseId: targetNode.type === 'database' ? params.target : undefined,
+          connectionType: 'depends',
+        })
+        return
       }
-      addCanvasEdge(newEdge)
     },
-    [addCanvasEdge],
+    [addCanvasEdge, edges, nodes, onCreateConnection],
+  )
+
+  const handleEdgesDelete: OnEdgesDelete = useCallback(
+    (deletedEdges) => {
+      if (!onDeleteConnection) {
+        return
+      }
+      for (const edge of deletedEdges) {
+        if (edge.id.startsWith('service-connection-local-')) {
+          continue
+        }
+        onDeleteConnection(edge.id)
+      }
+    },
+    [onDeleteConnection],
   )
 
   // Handle node context menu (right-click)
@@ -230,7 +287,11 @@ export function CanvasEditor({
     (connection: Edge | Connection) => {
       if (connection.source === connection.target) return false
       const sourceNode = nodes.find((n) => n.id === connection.source)
-      return sourceNode?.type === 'service'
+      const targetNode = nodes.find((n) => n.id === connection.target)
+      if (sourceNode?.type !== 'service') {
+        return false
+      }
+      return targetNode?.type === 'service' || targetNode?.type === 'database'
     },
     [nodes],
   )
@@ -248,6 +309,8 @@ export function CanvasEditor({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
+        onEdgesDelete={handleEdgesDelete}
+        onNodeDragStop={(_event, node) => onNodeDragStop?.(node)}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
         onPaneClick={handlePaneClick}
@@ -258,6 +321,7 @@ export function CanvasEditor({
         onDragOver={handleDragOver}
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
+        connectionRadius={28}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         fitViewOptions={{
@@ -296,6 +360,12 @@ export function CanvasEditor({
         )}
 
         {/* MiniMap removed — user preference */}
+
+        <Panel position="top-left" className="m-2">
+          <div className="rounded-md border border-blue-500/10 bg-black/85 px-2.5 py-1 text-[10px] text-neutral-500 backdrop-blur">
+            common project network enabled
+          </div>
+        </Panel>
 
         {/* Custom panel for toolbar or other content */}
         {panelContent && (

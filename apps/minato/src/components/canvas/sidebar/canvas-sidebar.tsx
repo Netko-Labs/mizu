@@ -260,12 +260,17 @@ export function CanvasSidebar({ className, onAddService, onAddDatabase }: Canvas
                     sourceType: 'template',
                     templateId: template.id,
                     name: template.name,
+                    createAsGroup: true,
                   }}
                   onClick={() =>
                     onAddService?.({
                       name: template.name,
                       sourceType: 'template',
-                      sourceConfig: { templateId: template.id, overrides: {} },
+                      sourceConfig: {
+                        templateId: template.id,
+                        overrides: {},
+                        _createAsGroup: true,
+                      },
                     })
                   }
                 >

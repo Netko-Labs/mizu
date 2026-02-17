@@ -10,8 +10,8 @@ export function BaseHandle({ className, children, ...props }: ComponentProps<typ
     <Handle
       {...props}
       className={cn(
-        'h-2.5 w-2.5 rounded-full border-2 border-blue-500/20 bg-blue-500/30 transition-all',
-        'hover:border-blue-400/50 hover:bg-blue-400/40 hover:scale-125',
+        'h-4 w-4 rounded-full border-2 border-blue-400/35 bg-blue-500/45 shadow-[0_0_0_4px_rgba(59,130,246,0.12)] transition-all',
+        'hover:border-blue-300/70 hover:bg-blue-300/60 hover:scale-110',
         className,
       )}
     >

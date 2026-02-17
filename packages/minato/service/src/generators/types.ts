@@ -132,6 +132,7 @@ export interface MizuHook {
  */
 export interface MizuServiceConfig {
   name: string
+  dependsOn?: string[]
   hooks?: {
     preDeploy?: MizuHook[]
     postDeploy?: MizuHook[]
@@ -156,6 +157,16 @@ export interface MizuServiceConfig {
     protocol?: string
     port?: number
   }
+}
+
+/**
+ * Mizu.yml service group configuration.
+ * Groups represent one-click app bundles (services + databases).
+ */
+export interface MizuServiceGroupConfig {
+  name: string
+  services?: string[]
+  databases?: string[]
 }
 
 /**
@@ -191,6 +202,7 @@ export interface MizuYmlFile {
     variables: Record<string, string>
   }>
   services?: MizuServiceConfig[]
+  serviceGroups?: MizuServiceGroupConfig[]
   mesh?: MizuMeshConfig
   deployment?: MizuDeploymentConfig
 }

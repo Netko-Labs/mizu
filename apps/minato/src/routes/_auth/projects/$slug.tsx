@@ -79,16 +79,12 @@ function ProjectDetailPage() {
     )
   }
 
-  return <ProjectCanvasView projectId={project.id} projectName={project.name} project={project} />
+  return <ProjectCanvasView projectId={project.id} projectName={project.name} />
 }
 
 interface ProjectCanvasViewProps {
   projectId: string
   projectName: string
-  project: {
-    description: string | null
-    slug: string
-  }
 }
 
 function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
@@ -96,13 +92,23 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
   const queryClient = useQueryClient()
 
   const {
+    project,
     nodes,
     edges,
+    serviceGroups,
     handlePositionChange,
     handleCreateService,
     handleCreateDatabase,
+    handleCreateConnection,
+    handleDeleteConnection,
+    handleCreateServiceGroup,
+    handleAssignNodeToServiceGroup,
+    handleDeleteServiceGroup,
+    handleMoveServiceGroup,
+    handleResizeServiceGroup,
     findService,
     findDatabase,
+    getNodeServiceGroupId,
     getNodeType,
   } = useProjectCanvas(projectId)
 
@@ -243,36 +249,88 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
     ],
   )
 
-  const selectedService = selectedNodeId
-    ? getNodeType(selectedNodeId) === 'service'
-      ? (findService(selectedNodeId) ?? null)
-      : null
-    : null
+  const selectedNodeType = selectedNodeId ? getNodeType(selectedNodeId) : null
+  const actionableSelectedNodeType = selectedNodeType === 'service-group' ? null : selectedNodeType
 
-  const selectedDatabase = selectedNodeId
-    ? getNodeType(selectedNodeId) === 'database'
+  const selectedService =
+    selectedNodeId && selectedNodeType === 'service' ? (findService(selectedNodeId) ?? null) : null
+
+  const selectedDatabase =
+    selectedNodeId && selectedNodeType === 'database'
       ? (findDatabase(selectedNodeId) ?? null)
       : null
-    : null
 
   const handleNodeSelect = useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId)
   }, [])
 
+  const handleNodeDragStop = useCallback(
+    (node: Node) => {
+      const nodeType = getNodeType(node.id)
+      const maybeAbsolute = (node as Node & { positionAbsolute?: { x: number; y: number } })
+        .positionAbsolute
+      const groupId = getNodeServiceGroupId(node.id)
+      const parentGroup = groupId ? serviceGroups.find((group) => group.id === groupId) : null
+      const absolutePosition =
+        maybeAbsolute ??
+        (parentGroup
+          ? {
+              x: node.position.x + parentGroup.canvasPosition.x,
+              y: node.position.y + parentGroup.canvasPosition.y,
+            }
+          : node.position)
+
+      if (nodeType === 'service' || nodeType === 'database') {
+        handlePositionChange(node.id, absolutePosition)
+      }
+      if (nodeType === 'service-group') {
+        handleMoveServiceGroup(node.id, absolutePosition)
+      }
+    },
+    [
+      getNodeType,
+      getNodeServiceGroupId,
+      handlePositionChange,
+      handleMoveServiceGroup,
+      serviceGroups,
+    ],
+  )
+
   const handleNodesUpdate = useCallback(
     (updatedNodes: Node[]) => {
       for (const node of updatedNodes) {
-        const originalNode = nodes.find((n) => n.id === node.id)
-        if (
-          originalNode &&
-          (originalNode.position.x !== node.position.x ||
-            originalNode.position.y !== node.position.y)
-        ) {
-          handlePositionChange(node.id, node.position)
+        if (node.type !== 'service-group') {
+          continue
+        }
+        const group = serviceGroups.find((entry) => entry.id === node.id)
+        if (!group) {
+          continue
+        }
+
+        const style = node.style as Record<string, unknown> | undefined
+        const width =
+          typeof node.width === 'number'
+            ? node.width
+            : typeof style?.width === 'number'
+              ? style.width
+              : null
+        const height =
+          typeof node.height === 'number'
+            ? node.height
+            : typeof style?.height === 'number'
+              ? style.height
+              : null
+
+        if (width == null || height == null) {
+          continue
+        }
+
+        if (Math.round(width) !== group.size.width || Math.round(height) !== group.size.height) {
+          handleResizeServiceGroup(node.id, { width, height })
         }
       }
     },
-    [nodes, handlePositionChange],
+    [serviceGroups, handleResizeServiceGroup],
   )
 
   const { data: generatedFiles } = useQuery({
@@ -285,7 +343,7 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
       <CanvasProvider initialNodes={nodes} initialEdges={edges} onNodesUpdate={handleNodesUpdate}>
         <CanvasToolbar
           projectName={projectName}
-          nodeCount={nodes.length}
+          nodeCount={(project?.services.length ?? 0) + (project?.databases.length ?? 0)}
           sidebarOpen={sidebarOpen}
           yamlOpen={yamlOpen}
           logsOpen={!!logsTarget}
@@ -303,11 +361,18 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
             onNodeSelect={handleNodeSelect}
             onAddService={handleCreateService}
             onAddDatabase={handleCreateDatabase}
+            onCreateConnection={handleCreateConnection}
+            onDeleteConnection={handleDeleteConnection}
+            onNodeDragStop={handleNodeDragStop}
           />
           <CanvasContextMenu
             findService={findService}
             findDatabase={findDatabase}
-            getNodeType={getNodeType}
+            serviceGroups={serviceGroups}
+            getNodeServiceGroupId={getNodeServiceGroupId}
+            onCreateServiceGroup={handleCreateServiceGroup}
+            onAssignNodeToServiceGroup={handleAssignNodeToServiceGroup}
+            onDeleteServiceGroup={handleDeleteServiceGroup}
             onEditProperties={(nodeId) => setSelectedNodeId(nodeId)}
             onNodeAction={handleNodeAction}
             onViewLogs={(nodeId, nodeType) => setLogsTarget({ nodeId, nodeType })}
@@ -361,10 +426,10 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
               nodeId={selectedNodeId}
               service={selectedService}
               database={selectedDatabase}
-              nodeType={getNodeType(selectedNodeId)}
+              nodeType={actionableSelectedNodeType}
               onClose={() => setSelectedNodeId(null)}
               onAction={(action) =>
-                handleNodeAction(selectedNodeId, getNodeType(selectedNodeId), action)
+                handleNodeAction(selectedNodeId, actionableSelectedNodeType, action)
               }
               isActionPending={isActionPending}
             />

@@ -11,6 +11,7 @@ import {
 } from '@xyflow/react'
 import {
   createContext,
+  type CSSProperties,
   type ReactNode,
   useCallback,
   useContext,
@@ -18,6 +19,27 @@ import {
   useMemo,
   useState,
 } from 'react'
+
+function getNodeSize(node: Node): { width?: number; height?: number } {
+  const style = node.style as Record<string, unknown> | undefined
+  const styleWidth = style?.width
+  const styleHeight = style?.height
+
+  const width =
+    typeof node.width === 'number'
+      ? node.width
+      : typeof styleWidth === 'number'
+        ? styleWidth
+        : undefined
+  const height =
+    typeof node.height === 'number'
+      ? node.height
+      : typeof styleHeight === 'number'
+        ? styleHeight
+        : undefined
+
+  return { width, height }
+}
 
 export interface ContextMenuState {
   visible: boolean
@@ -108,21 +130,42 @@ function CanvasProviderInner({
   // Sync external node/edge changes (e.g., from server refetch) into React Flow state
   useEffect(() => {
     setNodes((current) => {
-      const incomingMap = new Map(initialNodes.map((n) => [n.id, n]))
-      const currentIds = new Set(current.map((n) => n.id))
+      const currentMap = new Map(current.map((n) => [n.id, n]))
 
-      // Merge: preserve drag positions from current, but update data from incoming
-      const merged = current
-        .filter((n) => incomingMap.has(n.id))
-        .map((n) => {
-          const incoming = incomingMap.get(n.id)!
-          return { ...incoming, position: n.position }
-        })
+      // Merge local runtime state with server state.
+      // Keep local positions/sizes during interaction, but adopt incoming positions
+      // when node structure changed (e.g. moved into/out of a service group).
+      const merged = initialNodes.map((incoming) => {
+        const n = currentMap.get(incoming.id)
+        if (!n) {
+          return incoming
+        }
+        const structureChanged =
+          incoming.parentId !== n.parentId ||
+          incoming.type !== n.type ||
+          incoming.extent !== n.extent
 
-      // Add new nodes that weren't in the current state
-      const added = initialNodes.filter((n) => !currentIds.has(n.id))
+        const nextNode: Node = {
+          ...incoming,
+          position: structureChanged ? incoming.position : n.position,
+        }
 
-      return [...merged, ...added]
+        if (incoming.type === 'service-group') {
+          const currentSize = getNodeSize(n)
+          if (currentSize.width || currentSize.height) {
+            const incomingStyle = (incoming.style as Record<string, unknown> | undefined) ?? {}
+            nextNode.style = {
+              ...incomingStyle,
+              ...(currentSize.width != null && { width: currentSize.width }),
+              ...(currentSize.height != null && { height: currentSize.height }),
+            } as CSSProperties
+          }
+        }
+
+        return nextNode
+      })
+
+      return merged
     })
   }, [initialNodes, setNodes])
 

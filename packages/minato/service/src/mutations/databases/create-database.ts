@@ -6,6 +6,7 @@ import {
   databaseTable,
 } from '@mizu/minato-domain'
 import { db } from '@mizu/minato-repository'
+import { eq } from 'drizzle-orm'
 import { encrypt } from '../../utils/crypto'
 
 const DEFAULT_PORTS: Record<DatabaseType, number> = {
@@ -48,6 +49,11 @@ export const createDatabase = async (data: {
   name: string
   version?: string
 }): Promise<Database | undefined> => {
+  const existingDatabases = await db
+    .select({ id: databaseTable.id })
+    .from(databaseTable)
+    .where(eq(databaseTable.projectId, data.projectId))
+
   // Generate credentials
   const credentials: DatabaseCredentials = {
     username: `${data.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_user`,
@@ -68,6 +74,10 @@ export const createDatabase = async (data: {
       version: data.version || DEFAULT_VERSIONS[data.type],
       credentials: encryptedCredentials,
       port: DEFAULT_PORTS[data.type],
+      canvasPosition: {
+        x: 100 + existingDatabases.length * 220,
+        y: 300,
+      },
     })
     .returning()
     .then(([result]) => result)

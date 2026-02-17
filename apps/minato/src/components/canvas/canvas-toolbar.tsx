@@ -82,7 +82,7 @@ export function CanvasToolbar({
         <span className="text-neutral-700">/</span>
         <span className="text-sm font-medium text-white">{projectName}</span>
         <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] text-blue-400/70">
-          {nodeCount} {nodeCount === 1 ? 'service' : 'services'}
+          {nodeCount} {nodeCount === 1 ? 'node' : 'nodes'}
         </span>
       </div>
 

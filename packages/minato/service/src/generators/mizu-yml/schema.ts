@@ -45,6 +45,7 @@ export const MizuAutoDiscoverySchema = z.object({
  */
 export const MizuServiceConfigSchema = z.object({
   name: z.string(),
+  dependsOn: z.array(z.string()).optional(),
   hooks: z
     .object({
       preDeploy: z.array(MizuHookSchema).optional(),
@@ -55,6 +56,15 @@ export const MizuServiceConfigSchema = z.object({
   healthCheck: MizuHealthCheckSchema.optional(),
   scaling: MizuScalingSchema.optional(),
   autoDiscovery: MizuAutoDiscoverySchema.optional(),
+})
+
+/**
+ * Zod schema for mizu.yml service groups.
+ */
+export const MizuServiceGroupSchema = z.object({
+  name: z.string(),
+  services: z.array(z.string()).optional(),
+  databases: z.array(z.string()).optional(),
 })
 
 /**
@@ -95,6 +105,7 @@ export const MizuYmlSchema = z.object({
   }),
   profiles: z.array(MizuProfileSchema).optional(),
   services: z.array(MizuServiceConfigSchema).optional(),
+  serviceGroups: z.array(MizuServiceGroupSchema).optional(),
   mesh: MizuMeshSchema.optional(),
   deployment: MizuDeploymentSchema.optional(),
 })

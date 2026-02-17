@@ -24,6 +24,13 @@ interface VolumeMount {
   containerPath: string
 }
 
+export interface ServiceTransformContext {
+  serviceNameById: Map<string, string>
+  databaseNameById: Map<string, string>
+  networkNameById: Map<string, string>
+  commonNetworkName: string
+}
+
 /**
  * Transform a Mizu service to a Docker Compose service definition.
  */
@@ -32,6 +39,7 @@ export function transformService(
   connections: ServiceConnection[],
   volumes: Volume[],
   envGroups: Map<string, Record<string, string>>,
+  context: ServiceTransformContext,
 ): ComposeService {
   const composeService: ComposeService = {}
 
@@ -116,22 +124,36 @@ export function transformService(
         c.connectionType === 'depends' &&
         (c.targetType === 'service' || c.targetType === 'database'),
     )
-    .map((c) => c.toServiceId || c.toDatabaseId)
-    .filter((id): id is string => !!id)
+    .map((connection) => {
+      if (connection.toServiceId) {
+        return context.serviceNameById.get(connection.toServiceId)
+      }
+      if (connection.toDatabaseId) {
+        return context.databaseNameById.get(connection.toDatabaseId)
+      }
+      return undefined
+    })
+    .filter((name): name is string => !!name)
 
   if (dependsOn.length > 0) {
-    composeService.depends_on = dependsOn
+    composeService.depends_on = Array.from(new Set(dependsOn))
   }
 
-  // Networks
+  // Networks (project-common network + optional linked networks)
+  const networks = new Set<string>([context.commonNetworkName])
   const networkConnections = connections.filter(
     (c) => c.fromServiceId === service.id && c.targetType === 'network' && c.toNetworkId,
   )
-  if (networkConnections.length > 0) {
-    composeService.networks = networkConnections
-      .map((c) => c.toNetworkId)
-      .filter((id): id is string => id != null)
+  for (const connection of networkConnections) {
+    if (!connection.toNetworkId) {
+      continue
+    }
+    const networkName = context.networkNameById.get(connection.toNetworkId)
+    if (networkName) {
+      networks.add(networkName)
+    }
   }
+  composeService.networks = Array.from(networks)
 
   // Default restart policy
   composeService.restart = 'unless-stopped'
