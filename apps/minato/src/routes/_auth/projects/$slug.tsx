@@ -4,15 +4,14 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import type { Node } from '@xyflow/react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'
-import { CanvasEditor, CanvasProvider, CanvasSidebar } from '@/components/canvas'
+import { CanvasEditor, CanvasProvider, CanvasSidebar, useProjectCanvas } from '@/components/canvas'
 import { CanvasContextMenu } from '@/components/canvas/canvas-context-menu'
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { DeployDialog } from '@/components/canvas/deploy-dialog'
 import { LogsPanel } from '@/components/canvas/logs-panel'
 import { NodePropertyEditor, type PropertyAction } from '@/components/canvas/node-property-editor'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
-import { useProjectCanvas } from '@/hooks/use-project-canvas'
-import { useWorkspace } from '@/providers/workspace-provider'
+import { useWorkspace } from '@/components/core/workspace'
 import {
   deleteDatabase,
   deleteService,

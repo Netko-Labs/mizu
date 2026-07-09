@@ -1,1 +1,1 @@
-export { MidnightAuroraWhoami } from './midnight-aurora-whoami'
+export * from './whoami-view'

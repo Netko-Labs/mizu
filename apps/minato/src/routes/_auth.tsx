@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { CommandPaletteProvider } from '@/components/command-palette/command-palette-provider'
-import { AppShell } from '@/components/layout/app-shell'
+import { AppShell } from '@/components/core/app-shell'
+import { WorkspaceProvider } from '@/components/core/workspace'
 import { Spinner } from '@/components/ui/spinner'
 import { authClient } from '@/integrations/auth/client'
-import { WorkspaceProvider } from '@/providers/workspace-provider'
 
 export const Route = createFileRoute('/_auth')({
   component: AuthLayout,

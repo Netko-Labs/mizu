@@ -14,6 +14,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
+import { useWorkspace } from '@/components/core/workspace'
 import {
   Command,
   CommandDialog,
@@ -25,7 +26,6 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command'
-import { useWorkspace } from '@/providers/workspace-provider'
 import { projectQueries } from '@/shared/api'
 
 interface CommandPaletteProps {
