@@ -80,6 +80,7 @@ export function DatabaseNode({ data, selected }: NodeProps<DatabaseNodeType>) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <BaseHandle type="target" position={Position.Left} />
+      <BaseHandle type="source" position={Position.Right} />
 
       <BaseNode className={cn('w-[240px]', selected && 'border-blue-500/30')}>
         <BaseNodeHeader>

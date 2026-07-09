@@ -21,6 +21,7 @@ import '@xyflow/react/dist/style.css'
 import { cn } from '@/lib/utils'
 import { useCanvas } from './canvas-provider'
 import { ConnectionEdge, ConnectionEdgeMarkers } from './edges/connection-edge'
+import { ConnectionPreviewLine } from './edges/connection-preview-line'
 import { DatabaseNode } from './nodes/database-node'
 import { ExternalServiceNode } from './nodes/external-service-node'
 import { NetworkNode } from './nodes/network-node'
@@ -209,27 +210,62 @@ export function CanvasEditor({
 
       const sourceNode = nodes.find((node) => node.id === params.source)
       const targetNode = nodes.find((node) => node.id === params.target)
-      if (!sourceNode || !targetNode || sourceNode.type !== 'service') {
+      if (!sourceNode || !targetNode) {
         return
       }
 
-      if (targetNode.type !== 'service' && targetNode.type !== 'database') {
+      type PersistedConnection = {
+        edgeSource: string
+        edgeTarget: string
+        fromServiceId: string
+        toServiceId?: string
+        toDatabaseId?: string
+      }
+
+      let normalized: PersistedConnection | null = null
+
+      if (sourceNode.type === 'service' && targetNode.type === 'service') {
+        normalized = {
+          edgeSource: params.source,
+          edgeTarget: params.target,
+          fromServiceId: params.source,
+          toServiceId: params.target,
+        }
+      } else if (sourceNode.type === 'service' && targetNode.type === 'database') {
+        normalized = {
+          edgeSource: params.source,
+          edgeTarget: params.target,
+          fromServiceId: params.source,
+          toDatabaseId: params.target,
+        }
+      } else if (sourceNode.type === 'database' && targetNode.type === 'service') {
+        // Dependencies are persisted as "service depends on database".
+        // If user drags from DB -> service, normalize to the same semantic edge.
+        normalized = {
+          edgeSource: params.target,
+          edgeTarget: params.source,
+          fromServiceId: params.target,
+          toDatabaseId: params.source,
+        }
+      }
+
+      if (!normalized) {
         return
       }
 
       const hasConnection = edges.some(
-        (edge) => edge.source === params.source && edge.target === params.target,
+        (edge) => edge.source === normalized.edgeSource && edge.target === normalized.edgeTarget,
       )
       if (hasConnection) {
         return
       }
 
       addCanvasEdge({
-        id: `service-connection-local-${params.source}-${params.target}-${Date.now()}`,
-        source: params.source,
-        target: params.target,
-        sourceHandle: params.sourceHandle ?? undefined,
-        targetHandle: params.targetHandle ?? undefined,
+        id: `service-connection-local-${normalized.edgeSource}-${normalized.edgeTarget}-${Date.now()}`,
+        source: normalized.edgeSource,
+        target: normalized.edgeTarget,
+        sourceHandle: undefined,
+        targetHandle: undefined,
         type: 'connection',
         data: {
           connectionType: 'depends',
@@ -238,9 +274,9 @@ export function CanvasEditor({
 
       if (onCreateConnection) {
         onCreateConnection({
-          fromServiceId: params.source,
-          toServiceId: targetNode.type === 'service' ? params.target : undefined,
-          toDatabaseId: targetNode.type === 'database' ? params.target : undefined,
+          fromServiceId: normalized.fromServiceId,
+          toServiceId: normalized.toServiceId,
+          toDatabaseId: normalized.toDatabaseId,
           connectionType: 'depends',
         })
         return
@@ -288,10 +324,19 @@ export function CanvasEditor({
       if (connection.source === connection.target) return false
       const sourceNode = nodes.find((n) => n.id === connection.source)
       const targetNode = nodes.find((n) => n.id === connection.target)
-      if (sourceNode?.type !== 'service') {
+      if (!sourceNode || !targetNode) {
         return false
       }
-      return targetNode?.type === 'service' || targetNode?.type === 'database'
+
+      if (sourceNode.type === 'service') {
+        return targetNode.type === 'service' || targetNode.type === 'database'
+      }
+
+      if (sourceNode.type === 'database') {
+        return targetNode.type === 'service'
+      }
+
+      return false
     },
     [nodes],
   )
@@ -322,6 +367,8 @@ export function CanvasEditor({
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={28}
+        connectionLineComponent={ConnectionPreviewLine}
+        connectionLineContainerStyle={{ zIndex: 1200 }}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         fitViewOptions={{
@@ -336,7 +383,7 @@ export function CanvasEditor({
         colorMode={'dark' as ColorMode}
         proOptions={{ hideAttribution: true }}
         style={{ '--xy-background-color': '#000000' } as React.CSSProperties}
-        className="!bg-black"
+        className="!bg-black [&_.react-flow__edgelabel-renderer]:z-[90]"
       >
         {/* Background with dotted grid */}
         {showBackground && showGrid && (

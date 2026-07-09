@@ -1,11 +1,14 @@
 import type { ConnectionType } from '@mizu/minato-domain'
+import { IconX } from '@tabler/icons-react'
 import {
   BaseEdge,
   type Edge,
   EdgeLabelRenderer,
   type EdgeProps,
   getBezierPath,
+  useReactFlow,
 } from '@xyflow/react'
+import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface ConnectionEdgeData {
@@ -67,6 +70,7 @@ export function ConnectionEdge({
   selected,
   markerEnd,
 }: EdgeProps<ConnectionEdgeType>) {
+  const reactFlow = useReactFlow()
   const connectionType = data?.connectionType ?? 'connects'
   const isNetworkEdge = data?.isNetworkEdge ?? false
   const style = edgeStyles[connectionType]
@@ -92,6 +96,13 @@ export function ConnectionEdge({
       ? style.strokeWidth + 0.5
       : style.strokeWidth
 
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    reactFlow.deleteElements({
+      edges: [{ id }],
+    })
+  }
+
   return (
     <>
       <BaseEdge
@@ -112,22 +123,31 @@ export function ConnectionEdge({
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY - 26}px)`,
               pointerEvents: 'all',
+              zIndex: 3000,
             }}
             className="nodrag nopan"
           >
             <div
               className={cn(
-                'rounded-md border border-blue-500/[0.06] bg-black px-2 py-0.5 text-[10px] text-neutral-500 shadow-sm transition-opacity',
-                selected ? 'opacity-100' : 'opacity-60 hover:opacity-100',
+                'group/edge flex items-center gap-1 rounded-md border border-blue-500/20 bg-black/95 px-2 py-0.5 text-[10px] text-blue-200 shadow-sm shadow-blue-950/30',
               )}
             >
-              {data?.envVarName ? (
-                <span className="font-mono">{data.envVarName}</span>
-              ) : (
-                connectionLabels[connectionType]
-              )}
+              <span className={cn(data?.envVarName && 'font-mono')}>
+                {data?.envVarName ?? connectionLabels[connectionType]}
+              </span>
+              <button
+                type="button"
+                onClick={handleDelete}
+                aria-label="Delete connection"
+                className={cn(
+                  'rounded p-0.5 text-neutral-500 transition-colors hover:bg-red-500/10 hover:text-red-400',
+                  selected ? 'opacity-100' : 'opacity-0 group-hover/edge:opacity-100',
+                )}
+              >
+                <IconX className="size-3" />
+              </button>
             </div>
           </div>
         </EdgeLabelRenderer>
