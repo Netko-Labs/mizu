@@ -1,3 +1,7 @@
+# Shared compose project with nagare (same name + service/volume names), so
+# either app's docker:up manages the one Postgres idempotently.
+name: mizu
+
 services:
   # Minato App Services
   db-minato:

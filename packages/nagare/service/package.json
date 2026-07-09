@@ -1,0 +1,28 @@
+{
+  "name": "@mizu/nagare-service",
+  "scripts": {
+    "check-types": "tsgo --noEmit"
+  },
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mizu/logger": "workspace:*",
+    "@mizu/nagare-config": "workspace:*",
+    "@mizu/nagare-domain": "workspace:*",
+    "@mizu/nagare-repository": "workspace:*",
+    "@mizu/typescript-config": "workspace:*",
+    "dockerode": "^4.0.5",
+    "drizzle-orm": "^0.44.6",
+    "jose": "^6.0.11",
+    "js-yaml": "^4.1.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.35",
+    "@types/js-yaml": "^4.0.9"
+  }
+}

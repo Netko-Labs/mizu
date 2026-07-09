@@ -1,0 +1,20 @@
+# Nagare shares minato's Postgres: same compose project name, same service and
+# volume names, so `docker:up --app nagare` and `--app minato` manage the one
+# container idempotently.
+name: mizu
+
+services:
+  db-minato:
+    image: postgres:17
+    profiles: [nagare]
+    ports:
+      - "${MINATO_DB_PORT:-19432}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mizu
+    volumes:
+      - minato_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  minato_postgres_data:
