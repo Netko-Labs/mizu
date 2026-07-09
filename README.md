@@ -72,15 +72,64 @@ Mizu aims to make deployment feel fluid:
 
 ---
 
+## Architecture
+
+Mizu is a Bun + Turborepo monorepo with two apps, both named for how water moves:
+
+```
+apps/minato (港, harbor)   The web UI + identity provider — TanStack Start frontend with an
+                           auth-only Elysia backend (better-auth, JWT/JWKS). Port 3000.
+apps/nagare (流れ, flow)   The headless daemon — a Bun/Elysia server that owns everything that
+                           actually does work: workspaces, projects, services, databases,
+                           Docker orchestration, deployments, and live log streaming over
+                           WebSockets. Port 3001.
+```
+
+Minato mints JWTs; nagare verifies them against minato's JWKS — no shared secret. They share one
+Postgres database but own separate tables (auth vs. business) with independent migration
+histories. Each app has its own layered packages: `domain → repository → service → api`, with the
+frontend consuming nagare through a fully typed [Eden Treaty](https://elysiajs.com/eden/overview)
+client.
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 19, TanStack Router, TanStack Query |
-| Backend | TanStack Start (SSR), tRPC, Drizzle ORM |
+| Frontend | React 19, TanStack Router, TanStack Query, Eden Treaty |
+| Backend | Elysia 2, TanStack Start (SSR), Drizzle ORM, better-auth |
 | Database | PostgreSQL |
+| Containers | Docker (via dockerode) |
 | Runtime | Bun |
 | Build | Turborepo, Vite |
+
+---
+
+## Getting Started
+
+You'll need [Bun](https://bun.sh) and Docker (OrbStack or Docker Desktop work great on macOS).
+
+```bash
+bun install
+
+# Copy env templates and fill in secrets
+cp apps/minato/sample.env apps/minato/.env
+cp apps/nagare/sample.env apps/nagare/.env
+
+# Terminal 1: web UI + auth (also starts Postgres and runs migrations)
+bun run repo dev --app minato       # http://localhost:3000
+
+# Terminal 2: the daemon
+bun run repo dev --app nagare       # http://localhost:3001
+```
+
+Other things the repo CLI can do:
+
+```bash
+bun run check-types                     # typecheck everything (tsgo)
+bun run fmt-lint                        # Biome check
+bun run repo db:studio --app nagare     # poke at the database
+bun run repo status                     # what's running where
+```
 
 ---
 
@@ -89,7 +138,7 @@ Mizu aims to make deployment feel fluid:
 🚧 **Early Development** — The foundation is being laid. Core architecture exists, but user-facing features are still taking shape.
 
 Current focus:
-1. Solidifying the monorepo architecture
+1. Solidifying the two-app architecture (minato + nagare)
 2. Building the canvas/flowchart editor
 3. Crafting delightful UX (because life's too short for ugly interfaces)
 

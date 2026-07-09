@@ -1,253 +1,119 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with Mizu.
+This file applies to the whole repository unless a deeper `CLAUDE.md` overrides it.
 
 ## Project Identity
 
-**Mizu** (水, "water") is a self-hosting platform for macOS home labs. Think Coolify, Railway, or Heroku — but running on Mac Minis and MacBooks.
+**Mizu** (水, "water") is a self-hosting platform for macOS home labs. Think Coolify, Railway, or
+Heroku — but running on Mac Minis and MacBooks.
 
-### Core Vision
-- **Visual-first**: Canvas/flowchart interface for designing deployments
-- **macOS-native**: Built specifically for Apple hardware home labs
-- **Delightful UX**: Simple things stay simple, complex things remain possible
-- **Local-first**: Your machine, your data, your rules
+- **Visual-first**: the canvas/flowchart editor is the product's identity — nodes are
+  services/resources, edges are connections/dependencies, drag-and-drop everything.
+- **macOS-native**: built specifically for Apple hardware home labs.
+- **Local-first**: your machine, your data, your rules.
+- **Personality**: hobby project with heart — geek/anime-inspired without being cringe. Simple
+  things stay simple; complex things remain possible. If it's not delightful to use, it's not done.
 
-### What We're Building
-A platform where developers can deploy and manage applications through drag-and-drop visual interfaces, eliminating YAML archaeology and Kubernetes complexity for home lab use cases.
+## Conventions
 
-### Personality
-- Hobby project with heart — not enterprise software
-- Geek/anime-inspired without being cringe
-- Opinionated but escape hatches exist
-- Water flows naturally; so should deployments
+Portable code-style and folder-structure rules live in a reusable file imported here:
 
----
+@docs/conventions.md
 
-## Operating Principles
+That file covers **Vocabulary**, **Modules & Scope** (the `lib/` + `shared/` model), **Backend
+Layering**, **Component Authoring**, **State & Wiring**, **Code Style**, and **Workflow** (working
+principles, task management, and the commit convention). The sections below describe this repo's
+specific topology, scaffolding, and commands.
 
-- **Correctness over cleverness**: Prefer boring, readable solutions that are easy to maintain.
-- **Smallest change that works**: Minimize blast radius; don't refactor adjacent code unless it meaningfully reduces risk.
-- **Leverage existing patterns**: Follow established project conventions before introducing new abstractions.
-- **Prove it works**: Validate with tests/build/lint. "Seems right" is not done.
-- **Be explicit about uncertainty**: If you cannot verify something, say so and propose the safest next step.
-- **UX matters**: This isn't enterprise software — if it's not delightful to use, it's not done.
+## Repository Overview
 
----
+- Runtime and package manager: `bun@1.2.23`; monorepo tooling: Turborepo; type checks: **tsgo**
+  (`@typescript/native-preview`); formatter/linter: Biome.
+- Two apps:
+  - `apps/minato` (港, "harbor") — TanStack Start (React 19, Tailwind, shadcn/ui) frontend + an
+    **auth-only** Elysia backend (better-auth: email/password + optional social providers, with
+    `jwt`/`jwks`). The web UI + identity provider.
+  - `apps/nagare` (流れ, "flow") — a **headless** Bun/Elysia daemon (own port, `:3001`) that owns
+    all business operations: workspaces, projects, services, databases, connections,
+    instance settings, Docker orchestration, deployments, and a WebSocket log stream. Verifies
+    minato JWTs via JWKS — no shared secret.
+- Minato packages: `packages/minato/{domain,repository,service,api}` (auth only) +
+  `packages/configs/minato-config`.
+- Nagare packages: `packages/nagare/{domain,repository,service,api}` +
+  `packages/configs/nagare-config`.
+- **One shared Postgres database**: minato's repository owns the auth tables; nagare's repository
+  owns the business tables. Each keeps its own drizzle migration history in a distinct journal
+  table (`drizzle_minato_migrations` / `drizzle_nagare_migrations`). No cross-domain foreign keys —
+  business rows store `userId` as a plain column and nagare trusts the JWT `sub` claim.
+- Shared tooling lives under `packages/shared/*` (`cli`, `logger`, `typescript-config`).
 
-## Commands
+When adding apps, colocate app-specific packages under `packages/{app-name}/*` and config under
+`packages/configs/{app-name}-config`. Keep cross-cutting concerns in `packages/shared/*`.
 
-```bash
-# Development
-bun run repo dev --app minato         # Start dev server (localhost:3000)
-bun run repo build --app minato       # Build for production
-bun run repo serve --app minato       # Serve built app
+## Backend Layering
 
-# Verification (run before marking work complete)
-bun run check-types                   # Type check all packages
-bun run fmt-lint                      # Check formatting (Biome)
-bun run test                          # Run tests (Vitest)
-bun run repo test:e2e                 # Run E2E tests
+The generic layering pattern (`domain → repository → service → api → ui`, plus `lib/`/`shared/`)
+lives in **Backend Layering** in `@docs/conventions.md`. Mizu-stack specifics:
 
-# Database (Drizzle)
-bun run repo db:generate --app minato # Generate migrations
-bun run repo db:migrate --app minato  # Run migrations
-bun run repo db:push --app minato     # Push schema to DB
-bun run repo db:seed --app minato     # Seed database
-
-# Docker
-bun run repo docker:up --app minato   # Start services
-bun run repo docker:down --app minato # Stop services
-
-# Code Generation
-bun run gen:app                       # Generate new TanStack app
-bun run gen:lib                       # Generate new library package
-```
-
----
-
-## Architecture
-
-**Turborepo monorepo** using **Bun** as runtime and package manager.
-
-### Package Structure
-
-```
-apps/minato/                      # Mizu Minato - main web interface (TanStack Start)
-packages/
-  minato/
-    domain/                       # Drizzle schemas + drizzle-zod entities
-    repository/                   # Database layer (Drizzle ORM + PostgreSQL)
-    service/                      # Business logic (queries/mutations)
-    trpc/                         # tRPC router definitions
-  shared/
-    cli/                          # Monorepo CLI tool (bun run repo ...)
-    logger/                       # Pino-based logger
-    typescript-config/            # Shared TSConfig
-  configs/minato-config/          # Environment configuration
-```
-
-### Data Flow
-
-```
-Domain (schemas) → Repository (DB) → Service (logic) → tRPC (API) → Frontend (React)
-```
-
-### Key Patterns
-
-1. **drizzle-zod**: Auto-generate Zod schemas from Drizzle tables
-   ```typescript
-   createInsertSchema(), createUpdateSchema(), createSelectSchema()
-   ```
-
-2. **Folder-per-Entity in Service Layer**:
-   ```
-   service/src/queries/todos/get-todo.ts
-   service/src/mutations/todos/create-todo.ts
-   ```
-
-3. **Merged tRPC Routers**: Split by concern, then merge:
-   ```typescript
-   export const todosRouter = mergeRouters(todosQueries, todosMutations, todosSubscriptions)
-   ```
-
-4. **Dual tRPC Clients**: HTTP for queries/mutations, WebSocket for real-time
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TanStack Router, TanStack Query, tRPC Client, Tailwind CSS |
-| Backend | TanStack Start (SSR), tRPC Server, Drizzle ORM, PostgreSQL |
-| Auth | better-auth |
-| AI | Vercel AI SDK |
-| Build | Vite, Turborepo |
-| Runtime | Bun |
-
----
+- `apps/minato`'s backend is **auth only**: better-auth is mounted at `/api/auth` (with `jwt` +
+  `jwks` plugins; `GET /api/auth/token` mints the JWT nagare accepts). `packages/minato/api` is an
+  Elysia app (prefix `/api`) mounted into TanStack Start via the `/api/$` catch-all route calling
+  `app.handle(request)` — it exposes `/api/health`, `/api/me`, `/api/auth-methods`,
+  `/api/has-users`.
+- `apps/nagare` is a **standalone** Elysia server started with `.listen()` (NOT `.handle()`), so
+  native WebSocket upgrades work. All routes live in `packages/nagare/api/src/routes/{entity}.ts`
+  (HTTP **and** the `.ws()` log stream), composed into the one exported `app`; the app entry just
+  `.listen()`s it. Docker access (dockerode) and `~/.mizu` filesystem operations run in nagare.
+- **Cross-service auth**: minato mints a JWT (`GET /api/auth/token`); nagare verifies it against
+  minato's JWKS (`/api/auth/jwks`) with `jose`. The frontend attaches a Bearer JWT to nagare HTTP
+  calls (Eden Treaty `headers` callback) and passes `?token=` + a client-generated `?cid=` on
+  WebSockets.
+- **Elysia 2 (experimental, `2.0.0-exp.25`)** quirks: `@elysiajs/cors` has no Elysia-2 build, so
+  nagare CORS is hand-rolled in `packages/nagare/api/src/app.ts` (a `request` hook + an `OPTIONS`
+  preflight route); a `.ws()` route only populates `ws.query` when a **schema is declared**;
+  `ws.id` is unreliable, so clients supply `?cid=` and the server keys on it; `ws.send` takes a
+  **string** (events are JSON).
+- **Validation schemas come from `domain`, as zod — never inline, never TypeBox `t.*`.** Reuse a
+  `drizzle-zod` entity from `domain/entities/`, or define the shape in
+  `domain/schemas/{entity}/{name}-schema.ts` and import it.
+- Frontend data access goes through `apps/minato/src/shared/api/` (per-entity `queryOptions`
+  factories + key factories over the Eden Treaty client) — components never import the treaty
+  client directly and never hand-write query keys. Dates arrive as ISO strings (no superjson);
+  the api layer types them honestly via its `Serialized<T>` mapped type.
 
 ## Domain Concepts
 
-### Future Core Entities (planned)
-- **Project**: A collection of services and resources
-- **Service**: A deployable unit (container, app, database)
-- **Resource**: Infrastructure component (volume, network, secret)
-- **Deployment**: A versioned release of a service
-- **Flow**: Visual canvas representation of project topology
+- **Workspace** → **Project** → **Service / Database / Network / Volume / External service /
+  Env group**, wired by **Connections** — all drawn on the canvas
+  (`apps/minato/src/components/canvas/`).
+- Deployments run through nagare: generators (docker-compose, env, mizu-yml) → Docker
+  (containers/images/networks/volumes) → status + logs back to the canvas.
 
-### Canvas Editor (priority feature)
-The visual flowchart interface is central to Mizu's identity. When building UI:
-- Nodes represent services/resources
-- Edges represent connections/dependencies
-- Drag-and-drop for adding new components
-- Real-time status visualization
+## Commands
 
----
+- Minato (frontend + auth) dev: `bun run repo dev --app minato` (localhost:3000)
+- Nagare (daemon) dev: `bun run repo dev --app nagare` (localhost:3001)
+- Production build: `bun run repo build --app minato` / `--app nagare`
+- Docker up/down: `bun run repo docker:up --app minato` (shared Postgres; nagare profile reuses it)
+- Repo typecheck: `bun run check-types` · lint: `bun run fmt-lint` (fix: `fmt-lint:fix`) · tests:
+  `bun run test`
+- DB (per app): `bun run repo db:generate|db:migrate|db:push|db:seed --app minato|nagare`
+- Drizzle Studio: `bun run repo db:studio --app <name>`
+- Scaffolding: `bun run gen:app`, `bun run gen:lib`
 
-## Workflow
+## Verification
 
-### Plan Mode
-Enter plan mode for non-trivial tasks (3+ steps, multi-file changes, architectural decisions). Include verification steps. If new information invalidates the plan: stop, update, continue.
+- Start with the smallest relevant check for the code you changed, then broaden.
+- Before handing work off, run the relevant subset of `bun run check-types`, `bun run fmt-lint`,
+  `bun run test`.
+- If database code changes, run the appropriate `db:*` command or explain why not.
+- For user-facing changes, the bar is "UX feels right", not just "types pass".
+- **Stop-the-line rule**: on unexpected failures, stop adding features, preserve evidence, return
+  to diagnosis.
 
-### Incremental Delivery
-- Thin vertical slices over big-bang changes
-- Small, verifiable increments: implement → test → verify → expand
-- Feature flags for risky changes
+## Handoff Notes
 
-### Verification Before "Done"
-- `bun run check-types` passes
-- `bun run fmt-lint` passes
-- `bun run test` passes (or documented reason)
-- Behavior matches acceptance criteria
-- **UX feels right** (not just functionally correct)
-
-### Bug Fixing
-1. **Reproduce** reliably
-2. **Localize** the failure (UI, API, DB, build)
-3. **Reduce** to minimal failing case
-4. **Fix** root cause (not symptoms)
-5. **Guard** with regression coverage
-6. **Verify** end-to-end
-
----
-
-## Task Management
-
-Use `tasks/` directory for non-trivial work:
-- `tasks/todo.md` - Checklist with acceptance criteria
-- `tasks/lessons.md` - Failure modes and prevention rules
-
-### Plan Template
-```markdown
-- [ ] Restate goal + acceptance criteria
-- [ ] Locate existing implementation / patterns
-- [ ] Design: minimal approach + key decisions
-- [ ] Implement smallest safe slice
-- [ ] Add/adjust tests
-- [ ] Run verification (check-types/fmt-lint/test)
-- [ ] Summarize changes + verification story
-```
-
----
-
-## Code Style
-
-| Rule | Value |
-|------|-------|
-| Formatter | Biome |
-| Indent | 2 spaces |
-| Line width | 100 chars |
-| Quotes | Single (double in JSX) |
-| Trailing commas | Yes |
-| Path alias | `@/*` → `./src/*` |
-
-**Type safety**: Avoid `any` and ignores. Encode invariants at boundaries.
-
-**Dependencies**: Don't add new deps unless existing stack cannot solve it cleanly.
-
----
-
-## Commit Convention
-
-Format: `<emoji> <type>(<scope>?): <subject>`
-
-| Emoji | Type | Use |
-|-------|------|-----|
-| ✨ | feat | New feature |
-| 🐛 | fix | Bug fix |
-| 📝 | docs | Documentation |
-| 💄 | style | UI/styling |
-| ♻️ | refactor | Code restructure |
-| ⚡ | perf | Performance |
-| ✅ | test | Tests |
-| 🔧 | chore | Maintenance |
-| 🏗️ | build | Build system |
-| 👷 | ci | CI/CD |
-| 🔒 | security | Security |
-
----
-
-## Communication
-
-- Lead with outcome and impact
-- Reference concrete artifacts (file paths, commands, errors)
-- Ask questions only when blocked: one targeted question with recommended default
-- State assumptions if inferred
-- Show verification story: what you ran and the outcome
-
----
-
-## Error Recovery
-
-**Stop-the-line rule**: If anything unexpected happens (test failures, build errors, regressions), stop adding features, preserve evidence, return to diagnosis.
-
-**Safe fallbacks**: Prefer "safe default + warning" over partial behavior. Degrade gracefully with actionable errors.
-
----
-
-## Definition of Done
-
-- Behavior matches acceptance criteria
-- Verification passes (check-types/fmt-lint/test)
-- Code follows existing conventions
-- UX is intuitive (for user-facing changes)
-- Short verification story exists
+- Reference concrete files and commands when summarizing work.
+- Call out follow-up steps when contracts or shared packages change (especially the
+  `@mizu/nagare-api` `App` type — the frontend's Eden client is typed against it).
+- If asked to commit, follow the **Commit Convention** in `@docs/conventions.md`.

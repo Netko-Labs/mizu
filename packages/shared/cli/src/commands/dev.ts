@@ -1,5 +1,5 @@
 import * as path from 'node:path'
-import { getAppDir, getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
+import { getAppDir, getAppKind, getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
 import { killProcessOnPort, loadEnvFile, run } from '../utils/shell'
 import { dbGenerate, dbMigrate } from './db'
 import { dockerUp } from './docker'
@@ -48,7 +48,8 @@ export async function dev(args: string[]) {
 }
 
 /**
- * Run only the development server for an app (without docker/db setup)
+ * Run only the development server for an app (without docker/db setup).
+ * Vite apps run `vite dev`; headless server apps run `bun --watch src/index.ts`.
  */
 export async function serve(args: string[]) {
   const appName = parseAppArg(args)
@@ -66,19 +67,21 @@ export async function serve(args: string[]) {
   }
 
   const appDir = getAppDir(appName)
+  const kind = getAppKind(appName)
   const envFile = path.join(appDir, '.env')
   const appEnv = loadEnvFile(envFile)
 
-  // Get the port from environment or use default
   const port = Number(appEnv.PORT || process.env.PORT || 3000)
 
-  // Check and kill any process running on the port
   console.log(`🔍 Checking if port ${port} is in use...`)
   await killProcessOnPort(port)
 
-  console.log(`\n🖥️  Starting development server for ${appName} on port ${port}...`)
+  console.log(`\n🖥️  Starting ${appName} on port ${port}...`)
 
-  await run(['bun', '--bun', 'vite', 'dev'], {
+  const command =
+    kind === 'vite' ? ['bun', '--bun', 'vite', 'dev'] : ['bun', 'run', '--watch', 'src/index.ts']
+
+  await run(command, {
     cwd: appDir,
     env: appEnv,
   })

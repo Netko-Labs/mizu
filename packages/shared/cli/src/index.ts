@@ -11,7 +11,7 @@
 import { build } from './commands/build'
 import { clean } from './commands/clean'
 // Database commands
-import { dbGenerate, dbMigrate, dbMinato, dbPush, dbSeed } from './commands/db'
+import { dbGenerate, dbMigrate, dbPush, dbSeed, dbStudio } from './commands/db'
 // Development commands
 import { dev, serve } from './commands/dev'
 // Docker commands
@@ -49,7 +49,7 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
   'db:generate': dbGenerate,
   'db:seed': dbSeed,
   'db:push': dbPush,
-  'db:minato': dbMinato,
+  'db:studio': dbStudio,
 
   // Generators
   'generate:app': async () => generateApp(),
