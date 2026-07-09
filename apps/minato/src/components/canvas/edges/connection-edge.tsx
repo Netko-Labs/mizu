@@ -1,4 +1,4 @@
-import type { ConnectionType } from '@mizu/minato-domain'
+import type { ConnectionType } from '@mizu/nagare-domain'
 import { IconX } from '@tabler/icons-react'
 import {
   BaseEdge,

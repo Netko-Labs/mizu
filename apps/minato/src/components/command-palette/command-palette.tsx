@@ -25,8 +25,8 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command'
-import { useTRPC } from '@/integrations/trpc'
 import { useWorkspace } from '@/providers/workspace-provider'
+import { projectQueries } from '@/shared/api'
 
 interface CommandPaletteProps {
   open: boolean
@@ -41,13 +41,12 @@ interface Project {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const navigate = useNavigate()
-  const trpc = useTRPC()
   const [search, setSearch] = useState('')
   const { currentWorkspace } = useWorkspace()
 
   // Fetch projects for navigation
   const { data: projects } = useQuery({
-    ...trpc.projects.list.queryOptions({ workspaceId: currentWorkspace?.id ?? '' }),
+    ...projectQueries.list(currentWorkspace?.id ?? ''),
     enabled: open && Boolean(currentWorkspace),
   })
 

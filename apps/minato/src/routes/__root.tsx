@@ -1,4 +1,3 @@
-import type { AppRouter } from '@mizu/minato-trpc'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   createRootRouteWithContext,
@@ -7,18 +6,16 @@ import {
   Outlet,
   Scripts,
 } from '@tanstack/react-router'
-import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
-import * as TanstackQuery from '@/integrations/tanstack-query/root-provider'
+import * as TanstackQuery from '@/integrations/tanstack-query'
 
 import appCss from '../styles.css?url'
 import '@xyflow/react/dist/style.css'
 
-interface MyRouterContext {
+interface RouterContext {
   queryClient: QueryClient
-  trpc: TRPCOptionsProxy<AppRouter>
 }
 
-export const Route = createRootRouteWithContext<MyRouterContext>()({
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

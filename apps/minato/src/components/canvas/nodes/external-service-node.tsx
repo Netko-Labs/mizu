@@ -1,4 +1,4 @@
-import type { ExternalService, ExternalServiceType } from '@mizu/minato-domain'
+import type { ExternalService, ExternalServiceType } from '@mizu/nagare-domain'
 import {
   IconApi,
   IconBrandAws,

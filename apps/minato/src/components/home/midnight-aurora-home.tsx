@@ -7,16 +7,17 @@ import {
   IconPlus,
   IconServer,
 } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
+import { useEffect, useRef } from 'react'
 import { StatLine, TerminalCard } from '@/components/midnight-aurora'
 import { CreateProjectDialog } from '@/components/projects/create-project-dialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/integrations/auth/client'
-import { useTRPC } from '@/integrations/trpc'
 import { useWorkspace } from '@/providers/workspace-provider'
+import { initializeMizu, projectQueries, systemQueries } from '@/shared/api'
 
 function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -75,22 +76,23 @@ function ProjectItem({
 
 export function MidnightAuroraHome() {
   const { data: session } = useSession()
-  const trpc = useTRPC()
   const { currentWorkspace, isLoading: isWorkspaceLoading } = useWorkspace()
 
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
-    ...trpc.system.dashboardStats.queryOptions(),
-  })
+  const { data: stats, isLoading: isStatsLoading } = useQuery(systemQueries.dashboardStats())
 
   const { data: projects = [], isLoading: isProjectsLoading } = useQuery({
-    ...trpc.projects.list.queryOptions({ workspaceId: currentWorkspace?.id ?? '' }),
+    ...projectQueries.list(currentWorkspace?.id ?? ''),
     enabled: Boolean(currentWorkspace),
   })
 
-  useQuery({
-    ...trpc.system.initialize.queryOptions(),
-    staleTime: Number.POSITIVE_INFINITY,
-  })
+  // First-run setup is a POST with side effects now — fire it once per mount.
+  const { mutate: runInitialize } = useMutation({ mutationFn: initializeMizu })
+  const initialized = useRef(false)
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+    runInitialize()
+  }, [runInitialize])
 
   const recentProjects = projects.slice(0, 4)
   const isLoading = isStatsLoading || isWorkspaceLoading

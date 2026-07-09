@@ -6,17 +6,10 @@ import { createMiddleware, createStart } from '@tanstack/react-start'
  *
  * Logs all incoming requests and outgoing responses with kawaii energy!
  * Because even server logs deserve to be cute (◕‿◕✿)
- *
- * Note: tRPC routes (/api/trpc) are excluded as they have their own logging middleware
  */
 const requestLoggerMiddleware = createMiddleware().server(async ({ next, request }) => {
   const url = new URL(request.url)
   const path = url.pathname
-
-  // Skip logging for tRPC routes - they have their own logging middleware
-  if (path.startsWith('/api/trpc')) {
-    return next()
-  }
 
   const startTime = Date.now()
   const { method } = request

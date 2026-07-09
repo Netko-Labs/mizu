@@ -1,14 +1,14 @@
 'use client'
 
-import type { Workspace } from '@mizu/minato-domain'
+import type { Workspace } from '@mizu/nagare-domain'
 import { useQuery } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { useTRPC } from '@/integrations/trpc'
+import { type Serialized, workspaceQueries } from '@/shared/api'
 
 interface WorkspaceContextValue {
-  workspaces: Workspace[]
+  workspaces: Serialized<Workspace>[]
   currentWorkspaceId: string | null
-  currentWorkspace: Workspace | null
+  currentWorkspace: Serialized<Workspace> | null
   setCurrentWorkspaceId: (workspaceId: string) => void
   isLoading: boolean
 }
@@ -18,8 +18,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 const STORAGE_KEY = 'mizu.currentWorkspaceId'
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-  const trpc = useTRPC()
-  const { data, isLoading } = useQuery(trpc.workspaces.list.queryOptions())
+  const { data, isLoading } = useQuery(workspaceQueries.list())
   const workspaces = data ?? []
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null)
 

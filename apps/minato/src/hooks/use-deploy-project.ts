@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
-import { useTRPC } from '@/integrations/trpc'
+import { deployDatabase, deployService, projectKeys, projectQueries } from '@/shared/api'
 
 export type DeployEntityStatus = 'pending' | 'deploying' | 'success' | 'error'
 
@@ -13,16 +13,15 @@ export interface DeployEntity {
 }
 
 export function useDeployProject(projectId: string) {
-  const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [entities, setEntities] = useState<DeployEntity[]>([])
   const [isDeploying, setIsDeploying] = useState(false)
 
-  const { data: project } = useQuery(trpc.projects.getWithServices.queryOptions({ projectId }))
+  const { data: project } = useQuery(projectQueries.withServices(projectId))
 
-  const deployServiceMutation = useMutation(trpc.services.deploy.mutationOptions())
+  const deployServiceMutation = useMutation({ mutationFn: deployService })
 
-  const deployDatabaseMutation = useMutation(trpc.databases.deploy.mutationOptions())
+  const deployDatabaseMutation = useMutation({ mutationFn: deployDatabase })
 
   const buildEntities = useCallback((): DeployEntity[] => {
     if (!project) return []
@@ -60,7 +59,7 @@ export function useDeployProject(projectId: string) {
       )
 
       try {
-        await deployDatabaseMutation.mutateAsync({ databaseId: entity.id })
+        await deployDatabaseMutation.mutateAsync(entity.id)
         setEntities((prev) =>
           prev.map((e) => (e.id === entity.id ? { ...e, status: 'success' } : e)),
         )
@@ -84,7 +83,7 @@ export function useDeployProject(projectId: string) {
       )
 
       try {
-        await deployServiceMutation.mutateAsync({ serviceId: entity.id })
+        await deployServiceMutation.mutateAsync(entity.id)
         setEntities((prev) =>
           prev.map((e) => (e.id === entity.id ? { ...e, status: 'success' } : e)),
         )
@@ -103,9 +102,9 @@ export function useDeployProject(projectId: string) {
 
     // Refresh project data
     queryClient.invalidateQueries({
-      queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
+      queryKey: projectKeys.withServices(projectId),
     })
-  }, [buildEntities, deployDatabaseMutation, deployServiceMutation, projectId, queryClient, trpc])
+  }, [buildEntities, deployDatabaseMutation, deployServiceMutation, projectId, queryClient])
 
   return {
     entities,

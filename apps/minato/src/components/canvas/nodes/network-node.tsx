@@ -1,4 +1,4 @@
-import type { Network, NetworkDriver } from '@mizu/minato-domain'
+import type { Network, NetworkDriver } from '@mizu/nagare-domain'
 import { IconNetwork, IconTrash } from '@tabler/icons-react'
 import { type Node, type NodeProps, Position } from '@xyflow/react'
 import { useState } from 'react'

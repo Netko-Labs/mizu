@@ -8,22 +8,19 @@ import { CreateProjectDialog } from '@/components/projects/create-project-dialog
 import { ProjectCard } from '@/components/projects/project-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useTRPC } from '@/integrations/trpc'
 import { useWorkspace } from '@/providers/workspace-provider'
+import { projectQueries } from '@/shared/api'
 
 export const Route = createFileRoute('/_auth/projects/')({
   component: ProjectsDashboard,
 })
 
 function ProjectsDashboard() {
-  const trpc = useTRPC()
   const { currentWorkspace, isLoading: isWorkspaceLoading } = useWorkspace()
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data: projects = [], isLoading } = useQuery({
-    ...trpc.projects.list.queryOptions({
-      workspaceId: currentWorkspace?.id ?? '',
-    }),
+    ...projectQueries.list(currentWorkspace?.id ?? ''),
     enabled: Boolean(currentWorkspace),
   })
 

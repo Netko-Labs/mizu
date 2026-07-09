@@ -1,4 +1,4 @@
-import type { ConnectionType, Database, Service } from '@mizu/minato-domain'
+import type { ConnectionType, Database, Service } from '@mizu/nagare-domain'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import type { Edge, Node } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
@@ -6,7 +6,20 @@ import type { ConnectionEdgeData } from '@/components/canvas/edges/connection-ed
 import type { DatabaseNodeData } from '@/components/canvas/nodes/database-node'
 import type { ServiceGroupNodeData } from '@/components/canvas/nodes/service-group-node'
 import type { ServiceNodeData } from '@/components/canvas/nodes/service-node'
-import { useTRPC } from '@/integrations/trpc'
+import {
+  connectionKeys,
+  connectionQueries,
+  createConnection,
+  createDatabase,
+  createService,
+  deleteConnection,
+  projectKeys,
+  projectQueries,
+  type Serialized,
+  updateDatabasePosition,
+  updateProject,
+  updateServicePosition,
+} from '@/shared/api'
 
 /**
  * Debounce delay for position updates (ms).
@@ -170,7 +183,6 @@ function parseServiceGroups(settings: unknown): CanvasServiceGroup[] {
  * - Connection creation/deletion
  */
 export function useProjectCanvas(projectId: string) {
-  const trpc = useTRPC()
   const queryClient = useQueryClient()
 
   // Debounce timers for position updates
@@ -192,107 +204,80 @@ export function useProjectCanvas(projectId: string) {
 
   // Fetch project with all services and databases (poll every 5s for status updates)
   const { data: project } = useSuspenseQuery({
-    ...trpc.projects.getWithServices.queryOptions({ projectId }),
+    ...projectQueries.withServices(projectId),
     refetchInterval: 5000,
   })
 
   // Fetch connections for the project
-  const { data: connections } = useSuspenseQuery(
-    trpc.connections.listForProject.queryOptions({ projectId }),
-  )
+  const { data: connections } = useSuspenseQuery(connectionQueries.forProject(projectId))
 
   const serviceGroups = useMemo(() => parseServiceGroups(project?.settings), [project?.settings])
 
+  const invalidateProject = () => {
+    queryClient.invalidateQueries({ queryKey: projectKeys.withServices(projectId) })
+  }
+  const invalidateGeneratedFiles = () => {
+    queryClient.invalidateQueries({ queryKey: projectKeys.generatedFiles(projectId) })
+  }
+  const invalidateConnections = () => {
+    queryClient.invalidateQueries({ queryKey: connectionKeys.forProject(projectId) })
+  }
+
   // Service position update mutation
-  const updateServicePositionMutation = useMutation(
-    trpc.services.updatePosition.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const updateServicePositionMutation = useMutation({
+    mutationFn: updateServicePosition,
+    onSuccess: invalidateProject,
+  })
 
   // Database position update mutation
-  const updateDatabasePositionMutation = useMutation(
-    trpc.databases.updatePosition.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const updateDatabasePositionMutation = useMutation({
+    mutationFn: updateDatabasePosition,
+    onSuccess: invalidateProject,
+  })
 
   // Service create mutation
-  const createServiceMutation = useMutation(
-    trpc.services.create.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
-        })
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getGeneratedFiles.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const createServiceMutation = useMutation({
+    mutationFn: createService,
+    onSuccess: () => {
+      invalidateProject()
+      invalidateGeneratedFiles()
+    },
+  })
 
   // Database create mutation
-  const createDatabaseMutation = useMutation(
-    trpc.databases.create.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
-        })
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getGeneratedFiles.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const createDatabaseMutation = useMutation({
+    mutationFn: createDatabase,
+    onSuccess: () => {
+      invalidateProject()
+      invalidateGeneratedFiles()
+    },
+  })
 
   // Connection mutations
-  const createConnectionMutation = useMutation(
-    trpc.connections.create.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.connections.listForProject.queryKey({ projectId }),
-        })
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getGeneratedFiles.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const createConnectionMutation = useMutation({
+    mutationFn: createConnection,
+    onSuccess: () => {
+      invalidateConnections()
+      invalidateGeneratedFiles()
+    },
+  })
 
-  const deleteConnectionMutation = useMutation(
-    trpc.connections.delete.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.connections.listForProject.queryKey({ projectId }),
-        })
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getGeneratedFiles.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const deleteConnectionMutation = useMutation({
+    mutationFn: deleteConnection,
+    onSuccess: () => {
+      invalidateConnections()
+      invalidateGeneratedFiles()
+    },
+  })
 
   // Project settings update mutation (for service groups)
-  const updateProjectMutation = useMutation(
-    trpc.projects.update.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getWithServices.queryKey({ projectId }),
-        })
-        queryClient.invalidateQueries({
-          queryKey: trpc.projects.getGeneratedFiles.queryKey({ projectId }),
-        })
-      },
-    }),
-  )
+  const updateProjectMutation = useMutation({
+    mutationFn: updateProject,
+    onSuccess: () => {
+      invalidateProject()
+      invalidateGeneratedFiles()
+    },
+  })
 
   const updateServiceGroups = useCallback(
     (nextGroups: CanvasServiceGroup[]) => {
@@ -504,7 +489,7 @@ export function useProjectCanvas(projectId: string) {
    */
   const handleDeleteConnection = useCallback(
     (connectionId: string) => {
-      deleteConnectionMutation.mutate({ connectionId })
+      deleteConnectionMutation.mutate(connectionId)
     },
     [deleteConnectionMutation],
   )
@@ -829,7 +814,7 @@ export function useProjectCanvas(projectId: string) {
    * Find a service by ID from the project data.
    */
   const findService = useCallback(
-    (serviceId: string): Service | undefined => {
+    (serviceId: string): Serialized<Service> | undefined => {
       return project?.services.find((s) => s.id === serviceId)
     },
     [project],
@@ -839,7 +824,7 @@ export function useProjectCanvas(projectId: string) {
    * Find a database by ID from the project data.
    */
   const findDatabase = useCallback(
-    (databaseId: string): Database | undefined => {
+    (databaseId: string): Serialized<Database> | undefined => {
       return project?.databases.find((d) => d.id === databaseId)
     },
     [project],

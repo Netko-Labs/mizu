@@ -8,7 +8,8 @@ import type {
   ServiceSourceType,
   ServiceStatus,
   VolumeMount,
-} from '@mizu/minato-domain'
+} from '@mizu/nagare-domain'
+import type { Serialized } from '@/shared/api'
 import {
   IconBrandDocker,
   IconBrandGit,
@@ -39,8 +40,8 @@ export type PropertyAction =
 
 interface NodePropertyEditorProps {
   nodeId: string
-  service: Service | null
-  database: Database | null
+  service: Serialized<Service> | null
+  database: Serialized<Database> | null
   nodeType: 'service' | 'database' | null
   onClose: () => void
   onAction?: (action: PropertyAction) => void
@@ -254,7 +255,7 @@ function ServiceEditor({
   onAction,
   isActionPending,
 }: {
-  service: Service
+  service: Serialized<Service>
   onAction?: (action: PropertyAction) => void
   isActionPending?: boolean
 }) {
@@ -457,7 +458,7 @@ function DatabaseEditor({
   onAction,
   isActionPending,
 }: {
-  database: Database
+  database: Serialized<Database>
   onAction?: (action: PropertyAction) => void
   isActionPending?: boolean
 }) {

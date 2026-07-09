@@ -1,4 +1,4 @@
-import type { EnvGroup } from '@mizu/minato-domain'
+import type { EnvGroup } from '@mizu/nagare-domain'
 import { IconKey, IconLock, IconTrash } from '@tabler/icons-react'
 import { type Node, type NodeProps, Position } from '@xyflow/react'
 import { useState } from 'react'

@@ -1,4 +1,5 @@
-import type { Database, DatabaseStatus, DatabaseType } from '@mizu/minato-domain'
+import type { Database, DatabaseStatus, DatabaseType } from '@mizu/nagare-domain'
+import type { Serialized } from '@/shared/api'
 import {
   IconDatabase,
   IconDatabaseCog,
@@ -25,7 +26,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 
 export interface DatabaseNodeData {
-  database: Database
+  database: Serialized<Database>
   onStart?: () => void
   onStop?: () => void
   onDelete?: () => void

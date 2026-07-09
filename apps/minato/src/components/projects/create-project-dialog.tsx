@@ -16,8 +16,8 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useTRPC } from '@/integrations/trpc'
 import { useWorkspace } from '@/providers/workspace-provider'
+import { createProject, projectKeys } from '@/shared/api'
 
 interface CreateProjectDialogProps {
   children: ReactElement
@@ -29,19 +29,17 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
   const [description, setDescription] = useState('')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const trpc = useTRPC()
   const { currentWorkspace } = useWorkspace()
 
-  const createMutation = useMutation(
-    trpc.projects.create.mutationOptions({
-      onSuccess: (project) => {
-        queryClient.invalidateQueries({ queryKey: trpc.projects.list.queryKey() })
-        setOpen(false)
-        resetForm()
-        navigate({ to: '/projects/$slug', params: { slug: project.slug } })
-      },
-    }),
-  )
+  const createMutation = useMutation({
+    mutationFn: createProject,
+    onSuccess: (project) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      setOpen(false)
+      resetForm()
+      navigate({ to: '/projects/$slug', params: { slug: project.slug } })
+    },
+  })
 
   const resetForm = () => {
     setName('')

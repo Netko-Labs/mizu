@@ -1,7 +1,7 @@
 import { IconArrowDown, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useTRPC } from '@/integrations/trpc'
+import { databaseQueries, logQueries, serviceQueries } from '@/shared/api'
 
 interface LogsPanelProps {
   serviceId?: string
@@ -11,28 +11,25 @@ interface LogsPanelProps {
 }
 
 export function LogsPanel({ serviceId, databaseId, entityName, onClose }: LogsPanelProps) {
-  const trpc = useTRPC()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
 
   // Get the containerId from the service or database
   const { data: service } = useQuery({
-    ...trpc.services.getById.queryOptions({ serviceId: serviceId ?? '' }),
+    ...serviceQueries.byId(serviceId ?? ''),
     enabled: !!serviceId,
   })
 
   const { data: database } = useQuery({
-    ...trpc.databases.getById.queryOptions({ databaseId: databaseId ?? '' }),
+    ...databaseQueries.byId(databaseId ?? ''),
     enabled: !!databaseId,
   })
 
-  const containerId = serviceId
-    ? (service as { containerId?: string | null } | undefined)?.containerId
-    : (database as { containerId?: string | null } | undefined)?.containerId
+  const containerId = serviceId ? service?.containerId : database?.containerId
 
   // Fetch logs
   const { data: logs, isLoading } = useQuery({
-    ...trpc.logs.get.queryOptions({ containerId: containerId ?? '', tail: 200 }),
+    ...logQueries.byContainer(containerId ?? '', 200),
     enabled: !!containerId,
     refetchInterval: 3000,
   })

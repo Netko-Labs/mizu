@@ -1,4 +1,5 @@
-import type { Service, ServiceSourceType, ServiceStatus } from '@mizu/minato-domain'
+import type { Service, ServiceSourceType, ServiceStatus } from '@mizu/nagare-domain'
+import type { Serialized } from '@/shared/api'
 import {
   IconBrandDocker,
   IconBrandGit,
@@ -31,7 +32,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 
 export interface ServiceNodeData {
-  service: Service
+  service: Serialized<Service>
   onStart?: () => void
   onStop?: () => void
   onDelete?: () => void
@@ -62,7 +63,7 @@ function SourceTypeIcon({ type }: { type: ServiceSourceType }) {
   }
 }
 
-function getSourceInfo(service: Service): string {
+function getSourceInfo(service: Serialized<Service>): string {
   const config = (service.sourceConfig ?? {}) as Record<string, unknown>
 
   switch (service.sourceType) {
@@ -88,7 +89,7 @@ function getSourceInfo(service: Service): string {
 }
 
 /** Icon based on source image name */
-function ServiceIcon({ service }: { service: Service }) {
+function ServiceIcon({ service }: { service: Serialized<Service> }) {
   const config = (service.sourceConfig ?? {}) as Record<string, unknown>
   const image = (config.image as string | undefined)?.toLowerCase() ?? ''
 

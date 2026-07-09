@@ -12,8 +12,22 @@ import { LogsPanel } from '@/components/canvas/logs-panel'
 import { NodePropertyEditor, type PropertyAction } from '@/components/canvas/node-property-editor'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
 import { useProjectCanvas } from '@/hooks/use-project-canvas'
-import { useTRPC } from '@/integrations/trpc'
 import { useWorkspace } from '@/providers/workspace-provider'
+import {
+  deleteDatabase,
+  deleteService,
+  deployDatabase,
+  deployService,
+  projectKeys,
+  projectQueries,
+  restartService,
+  startDatabase,
+  startService,
+  stopDatabase,
+  stopService,
+  updateDatabase,
+  updateService,
+} from '@/shared/api'
 
 export const Route = createFileRoute('/_auth/projects/$slug')({
   component: ProjectDetailPage,
@@ -21,13 +35,9 @@ export const Route = createFileRoute('/_auth/projects/$slug')({
 
 function ProjectDetailPage() {
   const { slug } = Route.useParams()
-  const trpc = useTRPC()
   const { currentWorkspace } = useWorkspace()
   const { data: project, isLoading } = useQuery({
-    ...trpc.projects.getBySlug.queryOptions({
-      slug,
-      workspaceId: currentWorkspace?.id ?? '',
-    }),
+    ...projectQueries.bySlug(currentWorkspace?.id ?? '', slug),
     enabled: Boolean(currentWorkspace),
   })
 
@@ -88,7 +98,6 @@ interface ProjectCanvasViewProps {
 }
 
 function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
-  const trpcCtx = useTRPC()
   const queryClient = useQueryClient()
 
   const {
@@ -122,50 +131,57 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
   } | null>(null)
 
   const invalidateProject = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: trpcCtx.projects.getWithServices.queryKey({ projectId }),
-    })
-    queryClient.invalidateQueries({
-      queryKey: trpcCtx.projects.getGeneratedFiles.queryKey({ projectId }),
-    })
-  }, [queryClient, trpcCtx, projectId])
+    queryClient.invalidateQueries({ queryKey: projectKeys.withServices(projectId) })
+    queryClient.invalidateQueries({ queryKey: projectKeys.generatedFiles(projectId) })
+  }, [queryClient, projectId])
 
   // Service mutations
-  const updateServiceMutation = useMutation(
-    trpcCtx.services.update.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const deleteServiceMutation = useMutation(
-    trpcCtx.services.delete.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const deployServiceMutation = useMutation(
-    trpcCtx.services.deploy.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const startServiceMutation = useMutation(
-    trpcCtx.services.start.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const stopServiceMutation = useMutation(
-    trpcCtx.services.stop.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const restartServiceMutation = useMutation(
-    trpcCtx.services.restart.mutationOptions({ onSuccess: invalidateProject }),
-  )
+  const updateServiceMutation = useMutation({
+    mutationFn: updateService,
+    onSuccess: invalidateProject,
+  })
+  const deleteServiceMutation = useMutation({
+    mutationFn: deleteService,
+    onSuccess: invalidateProject,
+  })
+  const deployServiceMutation = useMutation({
+    mutationFn: deployService,
+    onSuccess: invalidateProject,
+  })
+  const startServiceMutation = useMutation({
+    mutationFn: startService,
+    onSuccess: invalidateProject,
+  })
+  const stopServiceMutation = useMutation({
+    mutationFn: stopService,
+    onSuccess: invalidateProject,
+  })
+  const restartServiceMutation = useMutation({
+    mutationFn: restartService,
+    onSuccess: invalidateProject,
+  })
 
   // Database mutations
-  const updateDatabaseMutation = useMutation(
-    trpcCtx.databases.update.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const deleteDatabaseMutation = useMutation(
-    trpcCtx.databases.delete.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const deployDatabaseMutation = useMutation(
-    trpcCtx.databases.deploy.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const startDatabaseMutation = useMutation(
-    trpcCtx.databases.start.mutationOptions({ onSuccess: invalidateProject }),
-  )
-  const stopDatabaseMutation = useMutation(
-    trpcCtx.databases.stop.mutationOptions({ onSuccess: invalidateProject }),
-  )
+  const updateDatabaseMutation = useMutation({
+    mutationFn: updateDatabase,
+    onSuccess: invalidateProject,
+  })
+  const deleteDatabaseMutation = useMutation({
+    mutationFn: deleteDatabase,
+    onSuccess: invalidateProject,
+  })
+  const deployDatabaseMutation = useMutation({
+    mutationFn: deployDatabase,
+    onSuccess: invalidateProject,
+  })
+  const startDatabaseMutation = useMutation({
+    mutationFn: startDatabase,
+    onSuccess: invalidateProject,
+  })
+  const stopDatabaseMutation = useMutation({
+    mutationFn: stopDatabase,
+    onSuccess: invalidateProject,
+  })
 
   const isActionPending =
     updateServiceMutation.isPending ||
@@ -191,20 +207,20 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
             updateServiceMutation.mutate({ serviceId: nodeId, sourceConfig: action.sourceConfig })
             break
           case 'delete':
-            deleteServiceMutation.mutate({ serviceId: nodeId })
+            deleteServiceMutation.mutate(nodeId)
             setSelectedNodeId(null)
             break
           case 'deploy':
-            deployServiceMutation.mutate({ serviceId: nodeId })
+            deployServiceMutation.mutate(nodeId)
             break
           case 'start':
-            startServiceMutation.mutate({ serviceId: nodeId })
+            startServiceMutation.mutate(nodeId)
             break
           case 'stop':
-            stopServiceMutation.mutate({ serviceId: nodeId })
+            stopServiceMutation.mutate(nodeId)
             break
           case 'restart':
-            restartServiceMutation.mutate({ serviceId: nodeId })
+            restartServiceMutation.mutate(nodeId)
             break
         }
       } else if (nodeType === 'database') {
@@ -219,17 +235,17 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
             })
             break
           case 'delete':
-            deleteDatabaseMutation.mutate({ databaseId: nodeId })
+            deleteDatabaseMutation.mutate(nodeId)
             setSelectedNodeId(null)
             break
           case 'deploy':
-            deployDatabaseMutation.mutate({ databaseId: nodeId })
+            deployDatabaseMutation.mutate(nodeId)
             break
           case 'start':
-            startDatabaseMutation.mutate({ databaseId: nodeId })
+            startDatabaseMutation.mutate(nodeId)
             break
           case 'stop':
-            stopDatabaseMutation.mutate({ databaseId: nodeId })
+            stopDatabaseMutation.mutate(nodeId)
             break
         }
       }
@@ -333,9 +349,7 @@ function ProjectCanvasView({ projectId, projectName }: ProjectCanvasViewProps) {
     [serviceGroups, handleResizeServiceGroup],
   )
 
-  const { data: generatedFiles } = useQuery({
-    ...trpcCtx.projects.getGeneratedFiles.queryOptions({ projectId }),
-  })
+  const { data: generatedFiles } = useQuery(projectQueries.generatedFiles(projectId))
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">

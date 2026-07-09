@@ -9,7 +9,12 @@ import {
   TerminalCard,
   ToggleField,
 } from '@/components/midnight-aurora'
-import { useTRPC } from '@/integrations/trpc'
+import {
+  instanceSettingsKeys,
+  instanceSettingsQueries,
+  systemQueries,
+  upsertInstanceSettings,
+} from '@/shared/api'
 
 interface InstanceSettingsForm {
   instanceName: string
@@ -36,16 +41,11 @@ const defaultForm: InstanceSettingsForm = {
 }
 
 export function MidnightAuroraSettings() {
-  const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const { data: settings, isPending: isLoadingSettings } = useQuery({
-    ...trpc.instanceSettings.get.queryOptions(),
-  })
+  const { data: settings, isPending: isLoadingSettings } = useQuery(instanceSettingsQueries.get())
 
-  const { data: stats } = useQuery({
-    ...trpc.system.dashboardStats.queryOptions(),
-  })
+  const { data: stats } = useQuery(systemQueries.dashboardStats())
 
   const [form, setForm] = useState<InstanceSettingsForm>(defaultForm)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
@@ -69,9 +69,9 @@ export function MidnightAuroraSettings() {
   }, [settings])
 
   const upsertMutation = useMutation({
-    ...trpc.instanceSettings.upsert.mutationOptions(),
+    mutationFn: upsertInstanceSettings,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: trpc.instanceSettings.get.queryKey() })
+      queryClient.invalidateQueries({ queryKey: instanceSettingsKeys.all })
       setFeedback({ type: 'success', message: 'configuration saved successfully' })
       setTimeout(() => setFeedback(null), 3000)
     },

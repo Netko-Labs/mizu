@@ -1,10 +1,11 @@
-import type { Project } from '@mizu/minato-domain'
+import type { Project } from '@mizu/nagare-domain'
 import { IconChevronRight, IconFolder } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
+import type { Serialized } from '@/shared/api'
 
 interface ProjectCardProps {
-  project: Project
+  project: Serialized<Project>
   delay?: number
 }
 

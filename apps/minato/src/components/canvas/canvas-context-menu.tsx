@@ -1,4 +1,5 @@
-import type { Database, Service } from '@mizu/minato-domain'
+import type { Database, Service } from '@mizu/nagare-domain'
+import type { Serialized } from '@/shared/api'
 import {
   IconApps,
   IconCopy,
@@ -21,8 +22,8 @@ import type { PropertyAction } from './node-property-editor'
 import { useCanvas } from './canvas-provider'
 
 interface CanvasContextMenuProps {
-  findService: (id: string) => Service | undefined
-  findDatabase: (id: string) => Database | undefined
+  findService: (id: string) => Serialized<Service> | undefined
+  findDatabase: (id: string) => Serialized<Database> | undefined
   onEditProperties: (nodeId: string) => void
   onNodeAction?: (
     nodeId: string,

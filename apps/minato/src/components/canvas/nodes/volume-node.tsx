@@ -1,4 +1,4 @@
-import type { Volume } from '@mizu/minato-domain'
+import type { Volume } from '@mizu/nagare-domain'
 import { IconDatabase, IconTrash } from '@tabler/icons-react'
 import { type Node, type NodeProps, Position } from '@xyflow/react'
 import { useState } from 'react'

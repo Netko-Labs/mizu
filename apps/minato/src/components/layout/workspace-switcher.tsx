@@ -27,9 +27,9 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { useTRPC } from '@/integrations/trpc'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/providers/workspace-provider'
+import { createWorkspace, deleteWorkspace, updateWorkspace, workspaceKeys } from '@/shared/api'
 
 interface WorkspaceSwitcherProps {
   collapsed?: boolean
@@ -38,7 +38,6 @@ interface WorkspaceSwitcherProps {
 type ActiveDialog = 'create' | 'edit' | 'delete' | null
 
 export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
-  const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null)
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(null)
@@ -51,18 +50,11 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
     ? workspaces.find((w) => w.id === targetWorkspaceId)
     : null
 
-  const invalidateList = () =>
-    queryClient.invalidateQueries({ queryKey: trpc.workspaces.list.queryKey() })
+  const invalidateList = () => queryClient.invalidateQueries({ queryKey: workspaceKeys.all })
 
-  const createMutation = useMutation(
-    trpc.workspaces.create.mutationOptions({ onSuccess: invalidateList }),
-  )
-  const updateMutation = useMutation(
-    trpc.workspaces.update.mutationOptions({ onSuccess: invalidateList }),
-  )
-  const deleteMutation = useMutation(
-    trpc.workspaces.delete.mutationOptions({ onSuccess: invalidateList }),
-  )
+  const createMutation = useMutation({ mutationFn: createWorkspace, onSuccess: invalidateList })
+  const updateMutation = useMutation({ mutationFn: updateWorkspace, onSuccess: invalidateList })
+  const deleteMutation = useMutation({ mutationFn: deleteWorkspace, onSuccess: invalidateList })
 
   // --- Dialog helpers ---
 
@@ -121,7 +113,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
   const handleDelete = async () => {
     if (!targetWorkspaceId) return
     try {
-      await deleteMutation.mutateAsync({ workspaceId: targetWorkspaceId })
+      await deleteMutation.mutateAsync(targetWorkspaceId)
       if (targetWorkspaceId === currentWorkspace?.id) {
         const remaining = workspaces.find((w) => w.id !== targetWorkspaceId)
         if (remaining) setCurrentWorkspaceId(remaining.id)
