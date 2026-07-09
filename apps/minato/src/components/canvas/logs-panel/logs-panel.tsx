@@ -35,6 +35,7 @@ export function LogsPanel({ serviceId, databaseId, entityName, onClose }: LogsPa
   })
 
   // Auto-scroll to bottom
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on every new logs payload to stick to the bottom
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -68,9 +69,7 @@ export function LogsPanel({ serviceId, databaseId, entityName, onClose }: LogsPa
               {entityName}
             </span>
           )}
-          {!containerId && (
-            <span className="text-[10px] text-neutral-600">no container</span>
-          )}
+          {!containerId && <span className="text-[10px] text-neutral-600">no container</span>}
         </div>
         <div className="flex items-center gap-1">
           {!autoScroll && (
@@ -99,22 +98,16 @@ export function LogsPanel({ serviceId, databaseId, entityName, onClose }: LogsPa
         onScroll={handleScroll}
         className="flex-1 overflow-auto p-2 font-mono text-[11px] leading-relaxed"
       >
-        {isLoading && (
-          <div className="text-neutral-600">Loading logs...</div>
-        )}
+        {isLoading && <div className="text-neutral-600">Loading logs...</div>}
         {!isLoading && !containerId && (
-          <div className="text-neutral-600">
-            No container found. Deploy first to see logs.
-          </div>
+          <div className="text-neutral-600">No container found. Deploy first to see logs.</div>
         )}
         {!isLoading && containerId && logLines.length === 0 && (
           <div className="text-neutral-600">No logs yet.</div>
         )}
         {logLines.map((line, i) => {
           // Simple heuristic: lines with ERROR, FATAL, panic are errors
-          const isError =
-            /error|fatal|panic|exception|fail/i.test(line) ||
-            line.includes('stderr')
+          const isError = /error|fatal|panic|exception|fail/i.test(line) || line.includes('stderr')
           return (
             <div
               key={`${i}-${line.slice(0, 20)}`}

@@ -1,8 +1,8 @@
 import {
   type ConnectionLineComponentProps,
+  getBezierPath,
   type Node,
   Position,
-  getBezierPath,
 } from '@xyflow/react'
 
 export function ConnectionPreviewLine({
@@ -42,7 +42,14 @@ export function ConnectionPreviewLine({
   const marker = (x: number, y: number, key: string) => (
     <g key={key}>
       <circle cx={x} cy={y} r={8} fill={markerFill} fillOpacity={0.24} />
-      <circle cx={x} cy={y} r={5} fill={markerFill} stroke="rgba(255,255,255,0.95)" strokeWidth={1.5} />
+      <circle
+        cx={x}
+        cy={y}
+        r={5}
+        fill={markerFill}
+        stroke="rgba(255,255,255,0.95)"
+        strokeWidth={1.5}
+      />
       <circle cx={x} cy={y} r={1.8} fill="rgba(255,255,255,0.95)" />
     </g>
   )

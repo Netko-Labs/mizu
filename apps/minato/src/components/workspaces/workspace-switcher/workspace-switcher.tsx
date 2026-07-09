@@ -1,23 +1,5 @@
-import {
-  IconAlertTriangle,
-  IconCheck,
-  IconChevronDown,
-  IconPencil,
-  IconPlus,
-  IconTrash,
-} from '@tabler/icons-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { type FormEvent, useState } from 'react'
+import { IconCheck, IconChevronDown, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useWorkspace } from '@/components/core/workspace'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,104 +7,50 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
-import { createWorkspace, deleteWorkspace, updateWorkspace, workspaceKeys } from '@/shared/api'
-
-interface WorkspaceSwitcherProps {
-  collapsed?: boolean
-}
-
-type ActiveDialog = 'create' | 'edit' | 'delete' | null
+import { useWorkspaceCrud, type WorkspaceSwitcherProps } from './lib'
+import {
+  WorkspaceCreateDialog,
+  WorkspaceDeleteDialog,
+  WorkspaceRenameDialog,
+} from './workspace-dialogs'
 
 export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
-  const queryClient = useQueryClient()
-  const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null)
-  const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [confirmName, setConfirmName] = useState('')
-
   const { workspaces, currentWorkspace, setCurrentWorkspaceId, isLoading } = useWorkspace()
 
-  const targetWorkspace = targetWorkspaceId
-    ? workspaces.find((w) => w.id === targetWorkspaceId)
-    : null
+  const {
+    activeDialog,
+    targetWorkspace,
+    name,
+    setName,
+    confirmName,
+    setConfirmName,
+    openCreate,
+    openEdit,
+    openDelete,
+    closeDialog,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
+    isCreating,
+    createError,
+    isUpdating,
+    updateError,
+    isDeleting,
+    deleteError,
+  } = useWorkspaceCrud()
 
-  const invalidateList = () => queryClient.invalidateQueries({ queryKey: workspaceKeys.all })
-
-  const createMutation = useMutation({ mutationFn: createWorkspace, onSuccess: invalidateList })
-  const updateMutation = useMutation({ mutationFn: updateWorkspace, onSuccess: invalidateList })
-  const deleteMutation = useMutation({ mutationFn: deleteWorkspace, onSuccess: invalidateList })
-
-  // --- Dialog helpers ---
-
-  const openCreate = () => {
-    setName('')
-    setActiveDialog('create')
-  }
-
-  const openEdit = (workspaceId: string, currentName: string) => {
-    setTargetWorkspaceId(workspaceId)
-    setName(currentName)
-    setActiveDialog('edit')
-  }
-
-  const openDelete = (workspaceId: string) => {
-    setTargetWorkspaceId(workspaceId)
-    setConfirmName('')
-    setActiveDialog('delete')
-  }
-
-  const closeDialog = () => {
-    setActiveDialog(null)
-    setTargetWorkspaceId(null)
-    setName('')
-    setConfirmName('')
-    createMutation.reset()
-    updateMutation.reset()
-    deleteMutation.reset()
-  }
-
-  // --- Handlers ---
-
-  const handleCreate = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return
-    try {
-      const workspace = await createMutation.mutateAsync({ name: name.trim() })
-      setCurrentWorkspaceId(workspace.id)
-      closeDialog()
-    } catch {
-      // error shown via mutation state
-    }
-  }
-
-  const handleUpdate = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!name.trim() || !targetWorkspaceId) return
-    try {
-      await updateMutation.mutateAsync({ workspaceId: targetWorkspaceId, name: name.trim() })
-      closeDialog()
-    } catch {
-      // error shown via mutation state
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!targetWorkspaceId) return
-    try {
-      await deleteMutation.mutateAsync(targetWorkspaceId)
-      if (targetWorkspaceId === currentWorkspace?.id) {
-        const remaining = workspaces.find((w) => w.id !== targetWorkspaceId)
-        if (remaining) setCurrentWorkspaceId(remaining.id)
-      }
-      closeDialog()
-    } catch {
-      // error shown via mutation state
-    }
-  }
+  const createDialog = (
+    <WorkspaceCreateDialog
+      open={activeDialog === 'create'}
+      name={name}
+      onNameChange={setName}
+      onSubmit={handleCreate}
+      onClose={closeDialog}
+      isPending={isCreating}
+      error={createError}
+    />
+  )
 
   // --- Loading state ---
 
@@ -152,7 +80,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
         <button
           type="button"
           onClick={openCreate}
-          disabled={createMutation.isPending}
+          disabled={isCreating}
           className={cn(
             'flex w-full items-center font-mono transition-all duration-200',
             collapsed
@@ -164,9 +92,9 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
             className={cn(collapsed ? 'size-5 text-neutral-600' : 'size-4 text-neutral-600')}
             strokeWidth={1.5}
           />
-          {!collapsed && <span>{createMutation.isPending ? 'creating...' : '+ workspace'}</span>}
+          {!collapsed && <span>{isCreating ? 'creating...' : '+ workspace'}</span>}
         </button>
-        {renderCreateDialog()}
+        {createDialog}
       </>
     )
   }
@@ -281,226 +209,27 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {renderCreateDialog()}
-      {renderEditDialog()}
-      {renderDeleteDialog()}
+      {createDialog}
+      <WorkspaceRenameDialog
+        open={activeDialog === 'edit'}
+        name={name}
+        targetName={targetWorkspace?.name}
+        onNameChange={setName}
+        onSubmit={handleUpdate}
+        onClose={closeDialog}
+        isPending={isUpdating}
+        error={updateError}
+      />
+      <WorkspaceDeleteDialog
+        open={activeDialog === 'delete'}
+        confirmName={confirmName}
+        targetName={targetWorkspace?.name}
+        onConfirmNameChange={setConfirmName}
+        onDelete={handleDelete}
+        onClose={closeDialog}
+        isPending={isDeleting}
+        error={deleteError}
+      />
     </>
   )
-
-  // --- Dialogs ---
-
-  function renderCreateDialog() {
-    return (
-      <Dialog open={activeDialog === 'create'} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="border-neutral-800 bg-neutral-950 font-mono sm:max-w-md">
-          <form onSubmit={handleCreate}>
-            <DialogHeader>
-              <DialogTitle className="font-mono text-neutral-200">Create Workspace</DialogTitle>
-              <DialogDescription className="font-mono text-neutral-500">
-                Workspaces keep related projects grouped and organized.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="create-workspace-name">Workspace name</FieldLabel>
-                  <Input
-                    id="create-workspace-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Studio, Labs, Client Work..."
-                    maxLength={100}
-                    autoFocus
-                    disabled={createMutation.isPending}
-                    className="border-neutral-800 bg-black font-mono"
-                  />
-                  <FieldDescription>Keep it short and recognizable.</FieldDescription>
-                </Field>
-              </FieldGroup>
-              {createMutation.error && (
-                <p className="mt-3 text-xs text-red-500">
-                  <span className="text-red-700">▸</span> {createMutation.error.message}
-                </p>
-              )}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeDialog}
-                disabled={createMutation.isPending}
-                className="border-neutral-800 bg-black font-mono text-neutral-400 hover:bg-neutral-900 hover:text-white"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={!name.trim() || createMutation.isPending}
-                className="bg-blue-600 font-mono text-white hover:bg-blue-500"
-              >
-                {createMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner className="size-3" />
-                    creating...
-                  </span>
-                ) : (
-                  'create'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
-  function renderEditDialog() {
-    return (
-      <Dialog open={activeDialog === 'edit'} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="border-neutral-800 bg-neutral-950 font-mono sm:max-w-md">
-          <form onSubmit={handleUpdate}>
-            <DialogHeader>
-              <DialogTitle className="font-mono text-neutral-200">Rename Workspace</DialogTitle>
-              <DialogDescription className="font-mono text-neutral-500">
-                Update the name for{' '}
-                <span className="text-neutral-300">{targetWorkspace?.name}</span>.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="edit-workspace-name">New name</FieldLabel>
-                  <Input
-                    id="edit-workspace-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Studio, Labs, Client Work..."
-                    maxLength={100}
-                    autoFocus
-                    disabled={updateMutation.isPending}
-                    className="border-neutral-800 bg-black font-mono"
-                  />
-                </Field>
-              </FieldGroup>
-              {updateMutation.error && (
-                <p className="mt-3 text-xs text-red-500">
-                  <span className="text-red-700">▸</span> {updateMutation.error.message}
-                </p>
-              )}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeDialog}
-                disabled={updateMutation.isPending}
-                className="border-neutral-800 bg-black font-mono text-neutral-400 hover:bg-neutral-900 hover:text-white"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  !name.trim() || name.trim() === targetWorkspace?.name || updateMutation.isPending
-                }
-                className="bg-blue-600 font-mono text-white hover:bg-blue-500"
-              >
-                {updateMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner className="size-3" />
-                    saving...
-                  </span>
-                ) : (
-                  'save'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
-  function renderDeleteDialog() {
-    const deleteTargetName = targetWorkspace?.name ?? ''
-    const isConfirmed = confirmName === deleteTargetName
-
-    return (
-      <Dialog open={activeDialog === 'delete'} onOpenChange={(open) => !open && closeDialog()}>
-        <DialogContent className="border-neutral-800 bg-neutral-950 font-mono sm:max-w-md">
-          <DialogHeader>
-            <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5">
-              <IconAlertTriangle className="size-5 text-red-500" />
-            </div>
-            <DialogTitle className="font-mono text-neutral-200">Delete Workspace</DialogTitle>
-            <DialogDescription className="font-mono text-neutral-500">
-              This will permanently destroy{' '}
-              <span className="font-medium text-neutral-200">{deleteTargetName}</span> and
-              cascade-delete all projects, services, databases, and volumes within it.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2">
-            <div className="rounded-lg border border-red-500/10 bg-red-500/5 px-3 py-2.5">
-              <p className="text-[11px] leading-relaxed text-red-400/80">
-                <span className="text-red-500">▸</span> This action is irreversible. All data
-                associated with this workspace will be permanently removed.
-              </p>
-            </div>
-
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="delete-confirm-name" className="text-neutral-500">
-                  Type <span className="text-neutral-300">{deleteTargetName}</span> to confirm
-                </FieldLabel>
-                <Input
-                  id="delete-confirm-name"
-                  value={confirmName}
-                  onChange={(e) => setConfirmName(e.target.value)}
-                  placeholder={deleteTargetName}
-                  autoFocus
-                  autoComplete="off"
-                  disabled={deleteMutation.isPending}
-                  className="border-neutral-800 bg-black font-mono"
-                />
-              </Field>
-            </FieldGroup>
-
-            {deleteMutation.error && (
-              <p className="text-xs text-red-500">
-                <span className="text-red-700">▸</span> {deleteMutation.error.message}
-              </p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={closeDialog}
-              disabled={deleteMutation.isPending}
-              className="border-neutral-800 bg-black font-mono text-neutral-400 hover:bg-neutral-900 hover:text-white"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleDelete}
-              disabled={!isConfirmed || deleteMutation.isPending}
-              className="bg-red-600 font-mono text-white hover:bg-red-500 disabled:opacity-40"
-            >
-              {deleteMutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Spinner className="size-3" />
-                  deleting...
-                </span>
-              ) : (
-                'delete workspace'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    )
-  }
 }

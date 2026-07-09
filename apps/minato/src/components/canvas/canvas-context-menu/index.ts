@@ -1,1 +1,1 @@
-export * from './canvas-context-menu'
+export { CanvasContextMenu } from './canvas-context-menu'

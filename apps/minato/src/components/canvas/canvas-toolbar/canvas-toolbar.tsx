@@ -7,10 +7,10 @@ import {
   IconLayoutSidebar,
   IconTerminal,
 } from '@tabler/icons-react'
-import { useReactFlow } from '@xyflow/react'
 import { Link } from '@tanstack/react-router'
-import { cn } from '@/lib/utils'
+import { useReactFlow } from '@xyflow/react'
 import { useCanvas } from '@/components/canvas/canvas-provider'
+import { cn } from '@/lib/utils'
 
 interface CanvasToolbarProps {
   projectName: string
@@ -143,6 +143,7 @@ export function CanvasToolbar({
 function FitViewButton() {
   let reactFlow: ReturnType<typeof useReactFlow> | null = null
   try {
+    // biome-ignore lint/correctness/useHookAtTopLevel: unconditional call — try/catch only guards rendering outside ReactFlowProvider
     reactFlow = useReactFlow()
   } catch {
     // Not inside ReactFlowProvider yet

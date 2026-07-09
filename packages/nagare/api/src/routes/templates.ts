@@ -1,5 +1,9 @@
-import { TemplateCategorySchema } from '@mizu/nagare-domain'
-import { allTemplates, getTemplateById, getTemplatesByCategory } from '@mizu/nagare-service'
+import {
+  allTemplates,
+  getTemplateById,
+  getTemplatesByCategory,
+  TemplateCategorySchema,
+} from '@mizu/nagare-domain'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
 

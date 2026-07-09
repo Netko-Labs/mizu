@@ -1,5 +1,4 @@
 import type { Service, ServiceSourceType, ServiceStatus } from '@mizu/nagare-domain'
-import type { Serialized } from '@/shared/api'
 import {
   IconBrandDocker,
   IconBrandGit,
@@ -30,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import type { Serialized } from '@/shared/api'
 
 export interface ServiceNodeData {
   service: Serialized<Service>
@@ -101,18 +101,15 @@ function ServiceIcon({ service }: { service: Serialized<Service> }) {
     return <IconBrandPython className="size-5 text-yellow-400" />
   if (image.includes('go') || image.includes('golang'))
     return <IconBrandGolang className="size-5 text-cyan-400" />
-  if (image.includes('rust'))
-    return <IconSettingsAutomation className="size-5 text-orange-400" />
+  if (image.includes('rust')) return <IconSettingsAutomation className="size-5 text-orange-400" />
   if (image.includes('ruby') || image.includes('rails'))
     return <IconDiamond className="size-5 text-red-400" />
   if (image.includes('php') || image.includes('laravel'))
     return <IconBrandPhp className="size-5 text-indigo-400" />
   if (image.includes('java') || image.includes('spring'))
     return <IconCoffee className="size-5 text-amber-400" />
-  if (service.sourceType === 'git')
-    return <IconBrandGit className="size-5 text-orange-400" />
-  if (service.sourceType === 'template')
-    return <IconFileCode className="size-5 text-purple-400" />
+  if (service.sourceType === 'git') return <IconBrandGit className="size-5 text-orange-400" />
+  if (service.sourceType === 'template') return <IconFileCode className="size-5 text-purple-400" />
 
   return <IconServer className="size-5 text-blue-400" />
 }
@@ -164,7 +161,9 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
       <div
         className={cn(
           'absolute -top-10 left-1/2 flex -translate-x-1/2 gap-0.5 rounded-lg border border-blue-500/10 bg-black p-1 shadow-xl shadow-black/60 transition-all duration-150',
-          isHovered || selected ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95',
+          isHovered || selected
+            ? 'opacity-100 scale-100'
+            : 'pointer-events-none opacity-0 scale-95',
         )}
       >
         {canStart && onStart && (

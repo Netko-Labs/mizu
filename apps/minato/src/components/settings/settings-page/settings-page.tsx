@@ -1,7 +1,5 @@
 import { IconBrandDocker, IconDatabase, IconServer } from '@tabler/icons-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useEffect, useState } from 'react'
 import {
   ConfigLine,
   EditableField,
@@ -9,98 +7,11 @@ import {
   TerminalCard,
   ToggleField,
 } from '@/components/shared/terminal'
-import {
-  instanceSettingsKeys,
-  instanceSettingsQueries,
-  systemQueries,
-  upsertInstanceSettings,
-} from '@/shared/api'
-
-interface InstanceSettingsForm {
-  instanceName: string
-  domain: string
-  dns: string
-  timezone: string
-  publicIpv4: string
-  publicIpv6: string
-  doNotTrack: boolean
-  registrationEnabled: boolean
-  updatesCronExpression: string
-}
-
-const defaultForm: InstanceSettingsForm = {
-  instanceName: 'mizu',
-  domain: '',
-  dns: '',
-  timezone: 'UTC',
-  publicIpv4: '',
-  publicIpv6: '',
-  doNotTrack: false,
-  registrationEnabled: true,
-  updatesCronExpression: '0 3 * * *',
-}
+import { useInstanceSettingsForm } from './lib'
 
 export function SettingsPage() {
-  const queryClient = useQueryClient()
-
-  const { data: settings, isPending: isLoadingSettings } = useQuery(instanceSettingsQueries.get())
-
-  const { data: stats } = useQuery(systemQueries.dashboardStats())
-
-  const [form, setForm] = useState<InstanceSettingsForm>(defaultForm)
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
-    null,
-  )
-
-  useEffect(() => {
-    if (settings) {
-      setForm({
-        instanceName: settings.instanceName ?? 'mizu',
-        domain: settings.domain ?? '',
-        dns: settings.dns ?? '',
-        timezone: settings.timezone ?? 'UTC',
-        publicIpv4: settings.publicIpv4 ?? '',
-        publicIpv6: settings.publicIpv6 ?? '',
-        doNotTrack: settings.doNotTrack ?? false,
-        registrationEnabled: settings.registrationEnabled ?? true,
-        updatesCronExpression: settings.updatesCronExpression ?? '0 3 * * *',
-      })
-    }
-  }, [settings])
-
-  const upsertMutation = useMutation({
-    mutationFn: upsertInstanceSettings,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: instanceSettingsKeys.all })
-      setFeedback({ type: 'success', message: 'configuration saved successfully' })
-      setTimeout(() => setFeedback(null), 3000)
-    },
-    onError: (error) => {
-      setFeedback({ type: 'error', message: error.message })
-      setTimeout(() => setFeedback(null), 5000)
-    },
-  })
-
-  const handleSave = () => {
-    upsertMutation.mutate({
-      instanceName: form.instanceName,
-      domain: form.domain || null,
-      dns: form.dns || null,
-      timezone: form.timezone,
-      publicIpv4: form.publicIpv4 || null,
-      publicIpv6: form.publicIpv6 || null,
-      doNotTrack: form.doNotTrack,
-      registrationEnabled: form.registrationEnabled,
-      updatesCronExpression: form.updatesCronExpression,
-    })
-  }
-
-  const updateField = <K extends keyof InstanceSettingsForm>(
-    key: K,
-    value: InstanceSettingsForm[K],
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
+  const { form, feedback, stats, isLoadingSettings, isSaving, updateField, handleSave } =
+    useInstanceSettingsForm()
 
   if (isLoadingSettings) {
     return (
@@ -266,10 +177,10 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={upsertMutation.isPending}
+              disabled={isSaving}
               className="rounded border border-neutral-700 bg-black px-4 py-1.5 font-mono text-xs text-neutral-300 transition-all hover:border-blue-500/50 hover:text-white disabled:opacity-50"
             >
-              {upsertMutation.isPending ? '$ saving...' : '$ save config'}
+              {isSaving ? '$ saving...' : '$ save config'}
             </button>
 
             {feedback && (

@@ -7,4 +7,9 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL ?? '',
   },
+  // Minato shares one Postgres with nagare but keeps its own migration
+  // history — distinct journal table so the two drizzle projects never collide.
+  migrations: {
+    table: 'drizzle_minato_migrations',
+  },
 })

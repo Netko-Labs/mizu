@@ -113,7 +113,7 @@
       "!**/generated",
       "!**/dist",
       "!**/components/ui",
-      "!**/components/canvas",
+      "!**/components/canvas/shared",
       "!**/.tanstack",
       "!**/.nitro",
       "!**/.output",

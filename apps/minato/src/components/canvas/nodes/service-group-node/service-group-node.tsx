@@ -1,5 +1,5 @@
 import { IconBoxMultiple } from '@tabler/icons-react'
-import { NodeResizer, type Node, type NodeProps } from '@xyflow/react'
+import { type Node, type NodeProps, NodeResizer } from '@xyflow/react'
 import type { CSSProperties } from 'react'
 import {
   BaseNode,

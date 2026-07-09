@@ -90,11 +90,7 @@ export function ConnectionEdge({
     : selected
       ? 'rgba(59,130,246,0.5)'
       : style.stroke
-  const strokeWidth = isNetworkEdge
-    ? 1.5
-    : selected
-      ? style.strokeWidth + 0.5
-      : style.strokeWidth
+  const strokeWidth = isNetworkEdge ? 1.5 : selected ? style.strokeWidth + 0.5 : style.strokeWidth
 
   const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()

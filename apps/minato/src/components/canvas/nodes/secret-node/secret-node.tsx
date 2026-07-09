@@ -74,9 +74,7 @@ export function SecretNode({ data, selected }: NodeProps<SecretNodeType>) {
             </span>
           </div>
 
-          {isSecret && (
-            <p className="text-[10px] text-muted-foreground italic">Values encrypted</p>
-          )}
+          {isSecret && <p className="text-[10px] text-muted-foreground italic">Values encrypted</p>}
         </BaseNodeContent>
       </BaseNode>
 

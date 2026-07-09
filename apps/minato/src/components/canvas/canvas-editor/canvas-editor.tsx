@@ -3,90 +3,27 @@ import {
   Background,
   BackgroundVariant,
   type ColorMode,
-  type Connection,
   ConnectionMode,
   Controls,
-  type Edge,
-  type EdgeTypes,
-  type Node,
-  type NodeTypes,
-  type OnConnect,
-  type OnEdgesDelete,
   Panel,
   ReactFlow,
-  type ReactFlowInstance,
 } from '@xyflow/react'
-import { type DragEvent, useCallback, useRef } from 'react'
 import '@xyflow/react/dist/style.css'
-import { cn } from '@/lib/utils'
 import { useCanvas } from '@/components/canvas/canvas-provider'
-import { ConnectionEdge, ConnectionEdgeMarkers } from '@/components/canvas/edges/connection-edge'
+import { ConnectionEdgeMarkers } from '@/components/canvas/edges/connection-edge'
 import { ConnectionPreviewLine } from '@/components/canvas/edges/connection-preview-line'
-import { DatabaseNode } from '@/components/canvas/nodes/database-node'
-import { ExternalServiceNode } from '@/components/canvas/nodes/external-service-node'
-import { NetworkNode } from '@/components/canvas/nodes/network-node'
-import { SecretNode } from '@/components/canvas/nodes/secret-node'
-import { ServiceNode } from '@/components/canvas/nodes/service-node'
-import { ServiceGroupNode } from '@/components/canvas/nodes/service-group-node'
-import { VolumeNode } from '@/components/canvas/nodes/volume-node'
+import { cn } from '@/lib/utils'
+import {
+  type CanvasEditorProps,
+  defaultEdgeOptions,
+  edgeTypes,
+  nodeTypes,
+  useCanvasConnect,
+  useCanvasDnd,
+  useCanvasInteractions,
+} from './lib'
 
-const nodeTypes: NodeTypes = {
-  'service-group': ServiceGroupNode,
-  service: ServiceNode,
-  database: DatabaseNode,
-  volume: VolumeNode,
-  network: NetworkNode,
-  secret: SecretNode,
-  external: ExternalServiceNode,
-}
-
-const edgeTypes: EdgeTypes = {
-  connection: ConnectionEdge,
-}
-
-/** Default edge options for new connections */
-const defaultEdgeOptions = {
-  type: 'connection',
-  animated: false,
-}
-
-export interface CanvasEditorProps {
-  /** Callback when a node is selected */
-  onNodeSelect?: (nodeId: string | null) => void
-  /** Callback when an edge is selected */
-  onEdgeSelect?: (edgeId: string | null) => void
-  /** Callback to create a service via backend */
-  onAddService?: (params: {
-    name: string
-    sourceType: 'image' | 'git' | 'template'
-    sourceConfig: Record<string, unknown>
-  }) => void
-  /** Callback to create a database via backend */
-  onAddDatabase?: (params: {
-    name: string
-    type: 'postgres' | 'mysql' | 'redis' | 'mongodb' | 'mariadb'
-    version?: string
-  }) => void
-  /** Callback to persist a new service dependency edge */
-  onCreateConnection?: (params: {
-    fromServiceId: string
-    toServiceId?: string
-    toDatabaseId?: string
-    connectionType: 'depends'
-  }) => void
-  /** Callback to delete a persisted connection edge */
-  onDeleteConnection?: (connectionId: string) => void
-  /** Callback when node drag stops (for position persistence) */
-  onNodeDragStop?: (node: Node) => void
-  /** Additional class names for the container */
-  className?: string
-  /** Whether to show the controls */
-  showControls?: boolean
-  /** Whether to show the background grid */
-  showBackground?: boolean
-  /** Custom panel content (e.g., for toolbar) */
-  panelContent?: React.ReactNode
-}
+export type { CanvasEditorProps } from './lib'
 
 export function CanvasEditor({
   onNodeSelect,
@@ -101,245 +38,22 @@ export function CanvasEditor({
   showBackground = true,
   panelContent,
 }: CanvasEditorProps) {
-  const reactFlowWrapper = useRef<HTMLDivElement>(null)
-  const reactFlowInstance = useRef<ReactFlowInstance | null>(null)
+  const { nodes, edges, onNodesChange, onEdgesChange, showGrid } = useCanvas()
+  const { reactFlowWrapper, handleInit, handleDragOver, handleDrop } = useCanvasDnd({
+    onAddService,
+    onAddDatabase,
+  })
+  const { handleConnect, handleEdgesDelete, isValidConnection } = useCanvasConnect({
+    onCreateConnection,
+    onDeleteConnection,
+  })
   const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    setSelectedNodeId,
-    setSelectedEdgeId,
-    clearSelection,
-    addEdge: addCanvasEdge,
-    openContextMenu,
-    closeContextMenu,
-    showGrid,
-  } = useCanvas()
-
-  // Handle ReactFlow initialization
-  const handleInit = useCallback((instance: ReactFlowInstance) => {
-    reactFlowInstance.current = instance
-  }, [])
-
-  // Handle drag over to allow drop
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }, [])
-
-  // Handle drop from sidebar
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-
-      const type = e.dataTransfer.getData('application/reactflow-type')
-      const dataStr = e.dataTransfer.getData('application/reactflow-data')
-
-      if (!type || !dataStr) {
-        return
-      }
-
-      const dropData = JSON.parse(dataStr)
-
-      if (type === 'service' && onAddService) {
-        const sourceType = dropData.sourceType || 'image'
-        let sourceConfig: Record<string, unknown>
-        if (sourceType === 'template') {
-          sourceConfig = {
-            templateId: dropData.templateId || 'custom',
-            overrides: {},
-            _createAsGroup: dropData.createAsGroup === true,
-          }
-        } else if (sourceType === 'git') {
-          sourceConfig = { repository: 'https://github.com/example/repo' }
-        } else {
-          sourceConfig = { image: 'nginx', tag: 'latest' }
-        }
-        onAddService({
-          name: dropData.name || 'New Service',
-          sourceType,
-          sourceConfig,
-        })
-      } else if (type === 'database' && onAddDatabase) {
-        onAddDatabase({
-          name: dropData.name || 'New Database',
-          type: dropData.databaseType || 'postgres',
-          version: dropData.version,
-        })
-      }
-      // Volume, network, secret, external types don't have backend mutations yet
-    },
-    [onAddService, onAddDatabase],
-  )
-
-  // Handle node click
-  const handleNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id)
-      setSelectedEdgeId(null)
-      onNodeSelect?.(node.id)
-    },
-    [setSelectedNodeId, setSelectedEdgeId, onNodeSelect],
-  )
-
-  // Handle edge click
-  const handleEdgeClick = useCallback(
-    (_event: React.MouseEvent, edge: Edge) => {
-      setSelectedEdgeId(edge.id)
-      setSelectedNodeId(null)
-      onEdgeSelect?.(edge.id)
-    },
-    [setSelectedEdgeId, setSelectedNodeId, onEdgeSelect],
-  )
-
-  // Handle pane click (deselect)
-  const handlePaneClick = useCallback(() => {
-    clearSelection()
-    closeContextMenu()
-    onNodeSelect?.(null)
-    onEdgeSelect?.(null)
-  }, [clearSelection, closeContextMenu, onNodeSelect, onEdgeSelect])
-
-  // Handle new connection
-  const handleConnect: OnConnect = useCallback(
-    (params) => {
-      if (!params.source || !params.target) {
-        return
-      }
-
-      const sourceNode = nodes.find((node) => node.id === params.source)
-      const targetNode = nodes.find((node) => node.id === params.target)
-      if (!sourceNode || !targetNode) {
-        return
-      }
-
-      type PersistedConnection = {
-        edgeSource: string
-        edgeTarget: string
-        fromServiceId: string
-        toServiceId?: string
-        toDatabaseId?: string
-      }
-
-      let normalized: PersistedConnection | null = null
-
-      if (sourceNode.type === 'service' && targetNode.type === 'service') {
-        normalized = {
-          edgeSource: params.source,
-          edgeTarget: params.target,
-          fromServiceId: params.source,
-          toServiceId: params.target,
-        }
-      } else if (sourceNode.type === 'service' && targetNode.type === 'database') {
-        normalized = {
-          edgeSource: params.source,
-          edgeTarget: params.target,
-          fromServiceId: params.source,
-          toDatabaseId: params.target,
-        }
-      } else if (sourceNode.type === 'database' && targetNode.type === 'service') {
-        // Dependencies are persisted as "service depends on database".
-        // If user drags from DB -> service, normalize to the same semantic edge.
-        normalized = {
-          edgeSource: params.target,
-          edgeTarget: params.source,
-          fromServiceId: params.target,
-          toDatabaseId: params.source,
-        }
-      }
-
-      if (!normalized) {
-        return
-      }
-
-      const hasConnection = edges.some(
-        (edge) => edge.source === normalized.edgeSource && edge.target === normalized.edgeTarget,
-      )
-      if (hasConnection) {
-        return
-      }
-
-      addCanvasEdge({
-        id: `service-connection-local-${normalized.edgeSource}-${normalized.edgeTarget}-${Date.now()}`,
-        source: normalized.edgeSource,
-        target: normalized.edgeTarget,
-        sourceHandle: undefined,
-        targetHandle: undefined,
-        type: 'connection',
-        data: {
-          connectionType: 'depends',
-        },
-      })
-
-      if (onCreateConnection) {
-        onCreateConnection({
-          fromServiceId: normalized.fromServiceId,
-          toServiceId: normalized.toServiceId,
-          toDatabaseId: normalized.toDatabaseId,
-          connectionType: 'depends',
-        })
-        return
-      }
-    },
-    [addCanvasEdge, edges, nodes, onCreateConnection],
-  )
-
-  const handleEdgesDelete: OnEdgesDelete = useCallback(
-    (deletedEdges) => {
-      if (!onDeleteConnection) {
-        return
-      }
-      for (const edge of deletedEdges) {
-        if (edge.id.startsWith('service-connection-local-')) {
-          continue
-        }
-        onDeleteConnection(edge.id)
-      }
-    },
-    [onDeleteConnection],
-  )
-
-  // Handle node context menu (right-click)
-  const handleNodeContextMenu = useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      event.preventDefault()
-      openContextMenu({ x: event.clientX, y: event.clientY }, node.id, node.type)
-    },
-    [openContextMenu],
-  )
-
-  // Handle pane context menu (right-click on background)
-  const handlePaneContextMenu = useCallback(
-    (event: MouseEvent | React.MouseEvent) => {
-      event.preventDefault()
-      openContextMenu({ x: event.clientX, y: event.clientY })
-    },
-    [openContextMenu],
-  )
-
-  // Connection validation: only services can be sources, no self-connections
-  const isValidConnection = useCallback(
-    (connection: Edge | Connection) => {
-      if (connection.source === connection.target) return false
-      const sourceNode = nodes.find((n) => n.id === connection.source)
-      const targetNode = nodes.find((n) => n.id === connection.target)
-      if (!sourceNode || !targetNode) {
-        return false
-      }
-
-      if (sourceNode.type === 'service') {
-        return targetNode.type === 'service' || targetNode.type === 'database'
-      }
-
-      if (sourceNode.type === 'database') {
-        return targetNode.type === 'service'
-      }
-
-      return false
-    },
-    [nodes],
-  )
+    handleNodeClick,
+    handleEdgeClick,
+    handlePaneClick,
+    handleNodeContextMenu,
+    handlePaneContextMenu,
+  } = useCanvasInteractions({ onNodeSelect, onEdgeSelect })
 
   return (
     <div ref={reactFlowWrapper} className={cn('h-full w-full', className)}>
@@ -433,9 +147,7 @@ export function CanvasEditor({
               <p className="mt-4 text-sm text-neutral-600">
                 Right-click or drag from sidebar to add components
               </p>
-              <p className="mt-1.5 text-xs text-neutral-700">
-                Build your architecture visually
-              </p>
+              <p className="mt-1.5 text-xs text-neutral-700">Build your architecture visually</p>
             </div>
           </Panel>
         )}

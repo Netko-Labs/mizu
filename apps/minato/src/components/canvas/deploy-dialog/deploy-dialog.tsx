@@ -1,8 +1,8 @@
 import { IconBolt } from '@tabler/icons-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect } from 'react'
-import { type DeployEntity, type DeployEntityStatus, useDeployProject } from './lib'
 import { cn } from '@/lib/utils'
+import { type DeployEntity, type DeployEntityStatus, useDeployProject } from './lib'
 
 interface DeployDialogProps {
   projectId: string
@@ -50,9 +50,7 @@ function EntityLine({ entity }: { entity: DeployEntity }) {
       >
         {statusIcons[entity.status]} {statusLabels[entity.status]}
       </span>
-      {entity.error && (
-        <span className="truncate text-[10px] text-red-500/70">{entity.error}</span>
-      )}
+      {entity.error && <span className="truncate text-[10px] text-red-500/70">{entity.error}</span>}
     </motion.div>
   )
 }
@@ -128,8 +126,7 @@ export function DeployDialog({ projectId, open, onOpenChange }: DeployDialogProp
                 disabled={!canDeploy}
                 className="flex items-center gap-1.5 rounded border border-neutral-700 bg-neutral-900 px-4 py-1.5 text-xs text-neutral-300 transition-all hover:border-blue-500/50 hover:text-white disabled:opacity-50"
               >
-                <IconBolt className="size-3" />
-                $ deploy --confirm
+                <IconBolt className="size-3" />$ deploy --confirm
               </button>
             )}
 

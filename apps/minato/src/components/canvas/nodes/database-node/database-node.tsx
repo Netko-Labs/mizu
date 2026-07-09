@@ -1,5 +1,4 @@
 import type { Database, DatabaseStatus, DatabaseType } from '@mizu/nagare-domain'
-import type { Serialized } from '@/shared/api'
 import {
   IconDatabase,
   IconDatabaseCog,
@@ -24,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import type { Serialized } from '@/shared/api'
 
 export interface DatabaseNodeData {
   database: Serialized<Database>
@@ -124,7 +124,9 @@ export function DatabaseNode({ data, selected }: NodeProps<DatabaseNodeType>) {
       <div
         className={cn(
           'absolute -top-10 left-1/2 flex -translate-x-1/2 gap-0.5 rounded-lg border border-blue-500/10 bg-black p-1 shadow-xl shadow-black/60 transition-all duration-150',
-          isHovered || selected ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95',
+          isHovered || selected
+            ? 'opacity-100 scale-100'
+            : 'pointer-events-none opacity-0 scale-95',
         )}
       >
         {canStart && onStart && (

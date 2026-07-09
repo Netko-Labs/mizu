@@ -12,7 +12,7 @@ COPY packages/configs/minato-config/package.json ./packages/configs/minato-confi
 COPY packages/minato/domain/package.json ./packages/minato/domain/
 COPY packages/minato/repository/package.json ./packages/minato/repository/
 COPY packages/minato/service/package.json ./packages/minato/service/
-COPY packages/minato/trpc/package.json ./packages/minato/trpc/
+COPY packages/minato/api/package.json ./packages/minato/api/
 COPY apps/minato/package.json ./apps/minato/
 RUN bun install --frozen-lockfile
 

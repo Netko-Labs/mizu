@@ -10,104 +10,24 @@ import {
   useNodesState,
 } from '@xyflow/react'
 import {
-  createContext,
   type CSSProperties,
-  type ReactNode,
+  createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useState,
 } from 'react'
-
-function getNodeSize(node: Node): { width?: number; height?: number } {
-  const style = node.style as Record<string, unknown> | undefined
-  const styleWidth = style?.width
-  const styleHeight = style?.height
-
-  const width =
-    typeof node.width === 'number'
-      ? node.width
-      : typeof styleWidth === 'number'
-        ? styleWidth
-        : undefined
-  const height =
-    typeof node.height === 'number'
-      ? node.height
-      : typeof styleHeight === 'number'
-        ? styleHeight
-        : undefined
-
-  return { width, height }
-}
-
-export interface ContextMenuState {
-  visible: boolean
-  position: { x: number; y: number }
-  nodeId: string | null
-  nodeType: string | null
-}
-
-export interface CanvasContextValue {
-  /** Current nodes in the canvas */
-  nodes: Node[]
-  /** Current edges in the canvas */
-  edges: Edge[]
-  /** ID of the currently selected node */
-  selectedNodeId: string | null
-  /** ID of the currently selected edge */
-  selectedEdgeId: string | null
-  /** Set the selected node ID */
-  setSelectedNodeId: (id: string | null) => void
-  /** Set the selected edge ID */
-  setSelectedEdgeId: (id: string | null) => void
-  /** Add a new node to the canvas */
-  addNode: (node: Node) => void
-  /** Remove a node from the canvas */
-  removeNode: (nodeId: string) => void
-  /** Add a new edge to the canvas */
-  addEdge: (edge: Edge) => void
-  /** Remove an edge from the canvas */
-  removeEdge: (edgeId: string) => void
-  /** Update a node's position */
-  updateNodePosition: (nodeId: string, position: { x: number; y: number }) => void
-  /** Update a node's data */
-  updateNodeData: (nodeId: string, data: Record<string, unknown>) => void
-  /** Handler for React Flow node changes */
-  onNodesChange: OnNodesChange
-  /** Handler for React Flow edge changes */
-  onEdgesChange: OnEdgesChange
-  /** Clear selection */
-  clearSelection: () => void
-  /** Context menu state */
-  contextMenu: ContextMenuState | null
-  /** Open context menu */
-  openContextMenu: (
-    position: { x: number; y: number },
-    nodeId?: string | null,
-    nodeType?: string | null,
-  ) => void
-  /** Close context menu */
-  closeContextMenu: () => void
-  /** Whether the background grid is visible */
-  showGrid: boolean
-  /** Toggle the background grid */
-  toggleGrid: () => void
-}
+import {
+  type CanvasContextValue,
+  type CanvasPosition,
+  type CanvasProviderProps,
+  getNodeSize,
+  useCanvasSelection,
+  useContextMenu,
+  useGridToggle,
+} from './lib'
 
 const CanvasContext = createContext<CanvasContextValue | null>(null)
-
-export interface CanvasProviderProps {
-  children: ReactNode
-  /** Initial nodes to populate the canvas */
-  initialNodes?: Node[]
-  /** Initial edges to populate the canvas */
-  initialEdges?: Edge[]
-  /** Callback when nodes change */
-  onNodesUpdate?: (nodes: Node[]) => void
-  /** Callback when edges change */
-  onEdgesUpdate?: (edges: Edge[]) => void
-}
 
 export function CanvasProvider(props: CanvasProviderProps) {
   return (
@@ -184,30 +104,10 @@ function CanvasProviderInner({
     })
   }, [initialEdges, setEdges])
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
-  const [showGrid, setShowGrid] = useState(true)
-
-  const toggleGrid = useCallback(() => {
-    setShowGrid((prev) => !prev)
-  }, [])
-
-  const openContextMenu = useCallback(
-    (position: { x: number; y: number }, nodeId?: string | null, nodeType?: string | null) => {
-      setContextMenu({
-        visible: true,
-        position,
-        nodeId: nodeId ?? null,
-        nodeType: nodeType ?? null,
-      })
-    },
-    [],
-  )
-
-  const closeContextMenu = useCallback(() => {
-    setContextMenu(null)
-  }, [])
+  const { selectedNodeId, selectedEdgeId, setSelectedNodeId, setSelectedEdgeId, clearSelection } =
+    useCanvasSelection()
+  const { contextMenu, openContextMenu, closeContextMenu } = useContextMenu()
+  const { showGrid, toggleGrid } = useGridToggle()
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
@@ -260,7 +160,7 @@ function CanvasProviderInner({
         setSelectedNodeId(null)
       }
     },
-    [setNodes, setEdges, selectedNodeId, onNodesUpdate, onEdgesUpdate],
+    [setNodes, setEdges, selectedNodeId, setSelectedNodeId, onNodesUpdate, onEdgesUpdate],
   )
 
   const addEdge = useCallback(
@@ -286,11 +186,11 @@ function CanvasProviderInner({
         setSelectedEdgeId(null)
       }
     },
-    [setEdges, selectedEdgeId, onEdgesUpdate],
+    [setEdges, selectedEdgeId, setSelectedEdgeId, onEdgesUpdate],
   )
 
   const updateNodePosition = useCallback(
-    (nodeId: string, position: { x: number; y: number }) => {
+    (nodeId: string, position: CanvasPosition) => {
       setNodes((nds) => {
         const updated = nds.map((node) => (node.id === nodeId ? { ...node, position } : node))
         onNodesUpdate?.(updated)
@@ -312,11 +212,6 @@ function CanvasProviderInner({
     },
     [setNodes, onNodesUpdate],
   )
-
-  const clearSelection = useCallback(() => {
-    setSelectedNodeId(null)
-    setSelectedEdgeId(null)
-  }, [])
 
   const value = useMemo<CanvasContextValue>(
     () => ({
@@ -346,6 +241,8 @@ function CanvasProviderInner({
       edges,
       selectedNodeId,
       selectedEdgeId,
+      setSelectedNodeId,
+      setSelectedEdgeId,
       addNode,
       removeNode,
       addEdge,

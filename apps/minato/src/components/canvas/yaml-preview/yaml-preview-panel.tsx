@@ -55,20 +55,13 @@ export function YamlPreviewPanel({
             onClick={toggleFormat}
             className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary"
           >
-            <span>
-              {format === 'docker-compose' ? 'docker-compose.yml' : 'mizu.yml'}
-            </span>
+            <span>{format === 'docker-compose' ? 'docker-compose.yml' : 'mizu.yml'}</span>
             <IconChevronRight className="size-3 text-muted-foreground" />
           </button>
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            className="h-7 px-2"
-          >
+          <Button variant="ghost" size="sm" onClick={handleCopy} className="h-7 px-2">
             {copied ? (
               <IconCheck className="size-4 text-green-500" />
             ) : (
@@ -77,12 +70,7 @@ export function YamlPreviewPanel({
           </Button>
 
           {onExport && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onExport}
-              className="h-7 px-2 text-xs"
-            >
+            <Button variant="secondary" size="sm" onClick={onExport} className="h-7 px-2 text-xs">
               Export
             </Button>
           )}
