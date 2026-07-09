@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as AuthWhoamiRouteImport } from './routes/_auth/whoami'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
@@ -35,9 +35,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthWhoamiRoute = AuthWhoamiRouteImport.update({
@@ -82,7 +82,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthHomeRoute
   '/settings': typeof AuthSettingsRoute
   '/whoami': typeof AuthWhoamiRoute
-  '/api/health': typeof ApiHealthRoute
+  '/api/$': typeof ApiSplatRoute
   '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -94,7 +94,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthHomeRoute
   '/settings': typeof AuthSettingsRoute
   '/whoami': typeof AuthWhoamiRoute
-  '/api/health': typeof ApiHealthRoute
+  '/api/$': typeof ApiSplatRoute
   '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -108,7 +108,7 @@ export interface FileRoutesById {
   '/_auth/home': typeof AuthHomeRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/whoami': typeof AuthWhoamiRoute
-  '/api/health': typeof ApiHealthRoute
+  '/api/$': typeof ApiSplatRoute
   '/_auth/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
@@ -122,7 +122,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/settings'
     | '/whoami'
-    | '/api/health'
+    | '/api/$'
     | '/projects/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -134,7 +134,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/settings'
     | '/whoami'
-    | '/api/health'
+    | '/api/$'
     | '/projects/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -147,7 +147,7 @@ export interface FileRouteTypes {
     | '/_auth/home'
     | '/_auth/settings'
     | '/_auth/whoami'
-    | '/api/health'
+    | '/api/$'
     | '/_auth/projects/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
@@ -158,7 +158,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ApiHealthRoute: typeof ApiHealthRoute
+  ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
@@ -186,11 +186,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/whoami': {
@@ -267,7 +267,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
-  ApiHealthRoute: ApiHealthRoute,
+  ApiSplatRoute: ApiSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }

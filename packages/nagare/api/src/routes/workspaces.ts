@@ -1,5 +1,10 @@
 import { CreateWorkspaceSchema, UpdateWorkspaceSchema } from '@mizu/nagare-domain'
-import { createWorkspace, deleteWorkspace, getWorkspaces, updateWorkspace } from '@mizu/nagare-service'
+import {
+  createWorkspace,
+  deleteWorkspace,
+  getWorkspaces,
+  updateWorkspace,
+} from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
 

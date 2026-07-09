@@ -24,8 +24,10 @@ export const projectsRoutes = new Elysia({ name: 'projects', prefix: '/projects'
     listProjects(user.id, query.workspaceId),
   )
   // (・o・)ゞ find a project by its slug
-  .get('/by-slug/:slug', { auth: true, query: ProjectBySlugQuerySchema }, ({ user, params, query }) =>
-    getProjectBySlug(user.id, query.workspaceId, params.slug),
+  .get(
+    '/by-slug/:slug',
+    { auth: true, query: ProjectBySlugQuerySchema },
+    ({ user, params, query }) => getProjectBySlug(user.id, query.workspaceId, params.slug),
   )
   // (・o・)ゞ one project by id
   .get('/:projectId', { auth: true }, ({ params }) => getProject(params.projectId))
