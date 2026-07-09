@@ -6,6 +6,15 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { jwt } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
+const enabledSocialProviders = Object.fromEntries(
+  Object.entries(minatoEnvConfig.auth.socialProviders)
+    .filter(([, provider]) => provider?.enabled)
+    .map(([name, provider]) => [
+      name,
+      { clientId: provider?.clientId ?? '', clientSecret: provider?.clientSecret ?? '' },
+    ]),
+)
+
 export const auth = betterAuth({
   appName: 'Minato',
   baseURL: minatoEnvConfig.app.baseUrl,
@@ -37,6 +46,7 @@ export const auth = betterAuth({
     }),
     tanstackStartCookies(),
   ],
+  socialProviders: enabledSocialProviders,
   trustedOrigins: minatoEnvConfig.auth.trustedOrigins,
   secret: minatoEnvConfig.auth.secret,
 })

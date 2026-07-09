@@ -1,5 +1,4 @@
 export * from './auth'
-export * from './chat'
 export * from './docker'
 export * from './filesystem'
 export * from './generators'

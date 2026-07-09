@@ -1,4 +1,3 @@
-export * from './chat'
 export * from './config'
 export * from './databases'
 export * from './env-groups'

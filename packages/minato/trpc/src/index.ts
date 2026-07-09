@@ -1,6 +1,5 @@
 import { router } from './init'
 import { authRouter } from './routers/auth'
-import { chatRouter } from './routers/chat'
 import { connectionsRouter } from './routers/connections'
 import { databasesRouter } from './routers/databases'
 import { instanceSettingsRouter } from './routers/instance-settings'
@@ -12,7 +11,6 @@ import { workspacesRouter } from './routers/workspaces'
 
 export const appRouter = router({
   auth: authRouter,
-  chat: chatRouter,
   connections: connectionsRouter,
   databases: databasesRouter,
   instanceSettings: instanceSettingsRouter,

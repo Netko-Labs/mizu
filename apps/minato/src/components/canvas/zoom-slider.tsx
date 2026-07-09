@@ -40,7 +40,7 @@ export function ZoomSlider({
           min={minZoom}
           max={maxZoom}
           step={0.01}
-          onValueChange={(values) => zoomTo(values[0])}
+          onValueChange={(values) => zoomTo(Array.isArray(values) ? (values[0] ?? zoom) : values)}
         />
         <Button variant="ghost" size="icon" onClick={() => zoomIn({ duration: 300 })}>
           <Plus className="h-4 w-4" />

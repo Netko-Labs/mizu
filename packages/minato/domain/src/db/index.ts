@@ -1,5 +1,4 @@
 export * from './auth'
-export * from './chat'
 export * from './databases'
 export * from './env-groups'
 export * from './external-services'

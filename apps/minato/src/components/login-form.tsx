@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
-interface LoginFormProps extends React.ComponentProps<'form'> {
+interface LoginFormProps extends Omit<React.ComponentProps<'form'>, 'onSubmit'> {
   onSubmit: (data: { email: string; password: string; name?: string }) => Promise<void>
   error: string | null
   isLoading: boolean

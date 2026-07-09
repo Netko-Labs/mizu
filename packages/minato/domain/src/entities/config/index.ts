@@ -1,5 +1,18 @@
 import { z } from 'zod'
 
+const _protoSocialProviderSchema = z.object({
+  enabled: z.boolean(),
+  clientId: z.string(),
+  clientSecret: z.string(),
+})
+
+const transformSocialProviderSchema = (data: z.infer<typeof _protoSocialProviderSchema>) => {
+  if (!data.clientId || !data.clientSecret) {
+    return undefined
+  }
+  return data
+}
+
 const _protoMinatoConfigSchema = z.object({
   app: z.object({
     dev: z.boolean().default(false),
@@ -23,6 +36,11 @@ const _protoMinatoConfigSchema = z.object({
       maxPasswordLength: z.number().default(128),
     }),
     trustedOrigins: z.array(z.string()).default(['http://localhost:3000', 'http://localhost:5173']),
+    socialProviders: z.object({
+      github: _protoSocialProviderSchema.transform(transformSocialProviderSchema).optional(),
+      google: _protoSocialProviderSchema.transform(transformSocialProviderSchema).optional(),
+      discord: _protoSocialProviderSchema.transform(transformSocialProviderSchema).optional(),
+    }),
   }),
 })
 
