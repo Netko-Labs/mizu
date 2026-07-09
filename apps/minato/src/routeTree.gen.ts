@@ -17,7 +17,6 @@ import { Route as AuthWhoamiRouteImport } from './routes/_auth/whoami'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthHomeRouteImport } from './routes/_auth/home'
 import { Route as AuthProjectsIndexRouteImport } from './routes/_auth/projects/index'
-import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthProjectsSlugRouteImport } from './routes/_auth/projects/$slug'
 
@@ -60,11 +59,6 @@ const AuthProjectsIndexRoute = AuthProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => AuthRoute,
 } as any)
-const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
-  id: '/api/trpc/$',
-  path: '/api/trpc/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -85,7 +79,6 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/projects': typeof AuthProjectsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -97,7 +90,6 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/projects': typeof AuthProjectsIndexRoute
 }
 export interface FileRoutesById {
@@ -111,7 +103,6 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/_auth/projects/$slug': typeof AuthProjectsSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/trpc/$': typeof ApiTrpcSplatRoute
   '/_auth/projects/': typeof AuthProjectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -125,7 +116,6 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/projects/$slug'
     | '/api/auth/$'
-    | '/api/trpc/$'
     | '/projects'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,7 +127,6 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/projects/$slug'
     | '/api/auth/$'
-    | '/api/trpc/$'
     | '/projects'
   id:
     | '__root__'
@@ -150,7 +139,6 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/_auth/projects/$slug'
     | '/api/auth/$'
-    | '/api/trpc/$'
     | '/_auth/projects/'
   fileRoutesById: FileRoutesById
 }
@@ -160,7 +148,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,13 +208,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthProjectsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/api/trpc/$': {
-      id: '/api/trpc/$'
-      path: '/api/trpc/$'
-      fullPath: '/api/trpc/$'
-      preLoaderRoute: typeof ApiTrpcSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -269,7 +249,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -7,8 +7,8 @@
  * Port mapping configuration for containers
  */
 export interface PortMapping {
-  /** Host port to expose */
-  hostPort: number
+  /** Host port to expose — omit to let Docker assign an ephemeral port */
+  hostPort?: number
   /** Container port to map */
   containerPort: number
   /** Protocol (tcp or udp) */

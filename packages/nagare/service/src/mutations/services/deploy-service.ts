@@ -105,7 +105,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     const containerName = `mizu-${sanitizeDockerName(project.slug)}-${sanitizeDockerName(service.name)}`
 
     const ports =
-      (service.ports as Array<{ container: number; host: number; protocol?: string }>) || []
+      (service.ports as Array<{ container: number; host?: number; protocol?: string }>) || []
 
     const containerId = await createContainer({
       name: containerName,

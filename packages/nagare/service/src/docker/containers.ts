@@ -37,7 +37,10 @@ export async function createContainer(options: ContainerCreateOptions): Promise<
         const protocol = port.protocol || 'tcp'
         const containerPortKey = `${port.containerPort}/${protocol}`
         exposedPorts[containerPortKey] = {}
-        portBindings[containerPortKey] = [{ HostPort: String(port.hostPort) }]
+        // An empty HostPort tells Docker to assign a free ephemeral port
+        portBindings[containerPortKey] = [
+          { HostPort: port.hostPort != null ? String(port.hostPort) : '' },
+        ]
       }
     }
 
