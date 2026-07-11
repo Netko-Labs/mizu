@@ -1,16 +1,9 @@
 import yaml from 'js-yaml'
-import type { GenerationOptions, MizuServiceConfig, MizuYmlFile, ProjectManifest } from '../types'
-
-interface ProjectSettings {
-  profiles?: Array<{ name: string; variables: Record<string, string> }>
-  mesh?: MizuYmlFile['mesh']
-  deployment?: MizuYmlFile['deployment']
-  serviceGroups?: Array<{
-    id: string
-    name: string
-    memberNodeIds?: string[]
-  }>
-}
+import { getIngressBaseDomain, serviceIngressHost } from '../../ingress'
+import { sanitizeName } from '../../runtime'
+import type { GenerationOptions, ProjectManifest } from '../types'
+import { type MizuYml, MizuYmlSchema } from './schema'
+import type { ImageSourceConfig, PortMapping, ProjectSettings, VolumeMount } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -35,24 +28,46 @@ function parseProjectSettings(settings: unknown): ProjectSettings {
   return {}
 }
 
+function parseEnvVarNames(envVars: string | null): string[] {
+  if (!envVars) {
+    return []
+  }
+  try {
+    const parsed = JSON.parse(envVars) as Record<string, string>
+    return isRecord(parsed) ? Object.keys(parsed).sort() : []
+  } catch {
+    // Encrypted or invalid JSON — omit rather than risk leaking values
+    return []
+  }
+}
+
 /**
- * Generate a mizu.yml file from a project manifest.
+ * Generate a mizu.yml v2 file from a project manifest.
  *
- * mizu.yml handles advanced orchestration features:
- * - Deployment hooks (pre/post deploy, rollback)
- * - Health checks
- * - Scaling configuration
- * - Service mesh settings
- * - Deployment strategies
+ * mizu.yml is the single manifest describing what nagare deploys: services
+ * (image, ports, volumes, env var names, connections, ingress hosts),
+ * databases, networks, and service groups. It is a display/export artifact —
+ * env var VALUES never appear here; they live in .env.
  */
-export function generateMizuYml(
+export async function generateMizuYml(
   manifest: ProjectManifest,
   options: GenerationOptions = {},
-): string {
+): Promise<string> {
   const { includeComments = true } = options
 
-  const mizuFile: MizuYmlFile = {
-    version: '1.0',
+  const baseDomain = await getIngressBaseDomain()
+  const settings = parseProjectSettings(manifest.project.settings)
+
+  const serviceNameById = new Map(manifest.services.map((service) => [service.id, service.name]))
+  const databaseNameById = new Map(
+    manifest.databases.map((database) => [database.id, database.name]),
+  )
+  const volumeNameById = new Map(
+    manifest.volumes.map((volume) => [volume.id, volume.dockerVolumeName || volume.name]),
+  )
+
+  const mizuFile: MizuYml = {
+    version: 2,
     project: {
       name: manifest.project.name,
       slug: manifest.project.slug,
@@ -60,141 +75,120 @@ export function generateMizuYml(
     },
   }
 
-  // Extract profiles from project settings
-  const settings = parseProjectSettings(manifest.project.settings)
-
-  if (settings?.profiles && settings.profiles.length > 0) {
-    mizuFile.profiles = settings.profiles
-  }
-
-  // Build service configurations from services
-  const serviceConfigs: MizuServiceConfig[] = []
-  const serviceNameById = new Map(manifest.services.map((service) => [service.id, service.name]))
-  const databaseNameById = new Map(
-    manifest.databases.map((database) => [database.id, database.name]),
-  )
-
-  // Build service dependency map from manual canvas connections
-  const dependencyNamesByServiceId = new Map<string, Set<string>>()
-  for (const connection of manifest.connections) {
-    if (connection.connectionType !== 'depends') {
-      continue
-    }
-    if (!serviceNameById.has(connection.fromServiceId)) {
-      continue
-    }
-
-    const targetName = connection.toServiceId
-      ? serviceNameById.get(connection.toServiceId)
-      : connection.toDatabaseId
-        ? databaseNameById.get(connection.toDatabaseId)
-        : undefined
-
-    if (!targetName) {
-      continue
-    }
-
-    const existing = dependencyNamesByServiceId.get(connection.fromServiceId) ?? new Set<string>()
-    existing.add(targetName)
-    dependencyNamesByServiceId.set(connection.fromServiceId, existing)
-  }
-
+  // Services keyed by name
+  const services: NonNullable<MizuYml['services']> = {}
   for (const service of manifest.services) {
-    const serviceSettings = (service.sourceConfig as Record<string, unknown>) || {}
-    const config: MizuServiceConfig = {
-      name: service.name,
-    }
+    const sourceConfig = (service.sourceConfig ?? {}) as ImageSourceConfig
+    const serviceConnections = manifest.connections.filter(
+      (connection) => connection.fromServiceId === service.id,
+    )
 
-    // Extract hooks from service settings
-    const hooks = serviceSettings.hooks as MizuServiceConfig['hooks']
-    if (hooks) {
-      config.hooks = hooks
-    }
+    const ports = (service.ports as PortMapping[] | undefined) ?? []
+    const volumeMounts = (service.volumeMounts as VolumeMount[] | undefined) ?? []
+    const envNames = parseEnvVarNames(service.envVars)
 
-    // Extract health check from service settings
-    const healthCheck = serviceSettings.healthCheck as MizuServiceConfig['healthCheck']
-    if (healthCheck) {
-      config.healthCheck = healthCheck
-    }
+    const connections = serviceConnections.flatMap((connection) => {
+      if (!connection.envVarName) {
+        return []
+      }
+      const targetName = connection.toServiceId
+        ? serviceNameById.get(connection.toServiceId)
+        : connection.toDatabaseId
+          ? databaseNameById.get(connection.toDatabaseId)
+          : undefined
+      return targetName ? [{ to: targetName, env: connection.envVarName }] : []
+    })
 
-    // Extract scaling from service settings
-    const scaling = serviceSettings.scaling as MizuServiceConfig['scaling']
-    if (scaling) {
-      config.scaling = scaling
-    }
+    const dependsOn = serviceConnections
+      .filter((connection) => connection.connectionType === 'depends')
+      .map((connection) =>
+        connection.toServiceId
+          ? serviceNameById.get(connection.toServiceId)
+          : connection.toDatabaseId
+            ? databaseNameById.get(connection.toDatabaseId)
+            : undefined,
+      )
+      .filter((name): name is string => !!name)
 
-    // Extract auto discovery from service settings
-    const autoDiscovery = serviceSettings.autoDiscovery as MizuServiceConfig['autoDiscovery']
-    if (autoDiscovery) {
-      config.autoDiscovery = autoDiscovery
-    }
-
-    const dependsOn = dependencyNamesByServiceId.get(service.id)
-    if (dependsOn && dependsOn.size > 0) {
-      config.dependsOn = Array.from(dependsOn)
-    }
-
-    // Only add if there's meaningful configuration
-    if (
-      config.hooks ||
-      config.healthCheck ||
-      config.scaling ||
-      config.autoDiscovery ||
-      config.dependsOn
-    ) {
-      serviceConfigs.push(config)
+    services[service.name] = {
+      image: sourceConfig.image ?? service.name,
+      tag: sourceConfig.tag ?? 'latest',
+      ...(ports.length > 0 && {
+        ports: ports.map((port) => ({
+          container: port.container,
+          ...(port.host !== undefined && { host: port.host }),
+          protocol: port.protocol ?? 'tcp',
+        })),
+      }),
+      ...(volumeMounts.length > 0 && {
+        volumes: volumeMounts.map((mount) => ({
+          source: volumeNameById.get(mount.volumeId) ?? mount.volumeId,
+          target: mount.containerPath,
+        })),
+      }),
+      ...(envNames.length > 0 && { env: envNames }),
+      ...(connections.length > 0 && { connections }),
+      ...(dependsOn.length > 0 && { dependsOn: Array.from(new Set(dependsOn)) }),
+      ...(ports.length > 0 && {
+        ingress: { host: serviceIngressHost(service.name, manifest.project.slug, baseDomain) },
+      }),
     }
   }
-
-  if (serviceConfigs.length > 0) {
-    mizuFile.services = serviceConfigs
+  if (Object.keys(services).length > 0) {
+    mizuFile.services = services
   }
 
-  // Service groups (Railway-style one-click app bundles)
+  // Databases keyed by name
+  const databases: NonNullable<MizuYml['databases']> = {}
+  for (const database of manifest.databases) {
+    databases[database.name] = {
+      type: database.type,
+      ...(database.version && { version: database.version }),
+      ...(database.port !== null && database.port !== undefined && { port: database.port }),
+    }
+  }
+  if (Object.keys(databases).length > 0) {
+    mizuFile.databases = databases
+  }
+
+  // Networks: the implicit project network plus user-defined ones
+  mizuFile.networks = [
+    `mizu-${sanitizeName(manifest.project.slug)}`,
+    ...manifest.networks.map((network) => network.name),
+  ]
+
+  // Service groups (one-click app bundles) from project settings
   if (settings.serviceGroups && settings.serviceGroups.length > 0) {
-    const groupConfigs = settings.serviceGroups
-      .flatMap((group) => {
-        const memberNodeIds = Array.isArray(group.memberNodeIds)
-          ? group.memberNodeIds.filter((member): member is string => typeof member === 'string')
-          : []
+    const groupConfigs = settings.serviceGroups.flatMap((group) => {
+      const memberNodeIds = Array.isArray(group.memberNodeIds)
+        ? group.memberNodeIds.filter((member): member is string => typeof member === 'string')
+        : []
 
-        const services = memberNodeIds
-          .map((memberId) => serviceNameById.get(memberId))
-          .filter((name): name is string => !!name)
-        const databases = memberNodeIds
-          .map((memberId) => databaseNameById.get(memberId))
-          .filter((name): name is string => !!name)
+      const groupServices = memberNodeIds
+        .map((memberId) => serviceNameById.get(memberId))
+        .filter((name): name is string => !!name)
+      const groupDatabases = memberNodeIds
+        .map((memberId) => databaseNameById.get(memberId))
+        .filter((name): name is string => !!name)
 
-        if (!group.name || (services.length === 0 && databases.length === 0)) {
-          return []
-        }
+      if (!group.name || (groupServices.length === 0 && groupDatabases.length === 0)) {
+        return []
+      }
 
-        return [
-          {
-            name: group.name,
-            ...(services.length > 0 && { services: Array.from(new Set(services)) }),
-            ...(databases.length > 0 && { databases: Array.from(new Set(databases)) }),
-          },
-        ]
-      })
-      .filter((group) => group.services || group.databases)
+      return [
+        {
+          name: group.name,
+          ...(groupServices.length > 0 && { services: Array.from(new Set(groupServices)) }),
+          ...(groupDatabases.length > 0 && { databases: Array.from(new Set(groupDatabases)) }),
+        },
+      ]
+    })
 
     if (groupConfigs.length > 0) {
       mizuFile.serviceGroups = groupConfigs
     }
   }
 
-  // Mesh configuration
-  if (settings?.mesh) {
-    mizuFile.mesh = settings.mesh
-  }
-
-  // Deployment configuration
-  if (settings?.deployment) {
-    mizuFile.deployment = settings.deployment
-  }
-
-  // Convert to YAML
   let yamlContent = yaml.dump(mizuFile, {
     indent: 2,
     lineWidth: 120,
@@ -204,34 +198,18 @@ export function generateMizuYml(
     forceQuotes: false,
   })
 
-  // Add header comment
   if (includeComments) {
-    const header = [
-      '# Mizu orchestration configuration',
-      `# Project: ${manifest.project.name}`,
-      '#',
-      '# This file configures advanced deployment features:',
-      '# - Dependencies: Manual service-to-service/database graph from canvas',
-      '# - Service groups: One-click app bundles (containers + databases)',
-      '# - Hooks: Scripts to run before/after deployments',
-      '# - Health checks: Service health monitoring',
-      '# - Scaling: Auto-scaling thresholds',
-      '# - Mesh: Service discovery and load balancing',
-      '#',
-      '',
-    ].join('\n')
-
-    yamlContent = header + yamlContent
+    yamlContent = `# mizu.yml — generated by mizu; describes what nagare deploys\n${yamlContent}`
   }
 
   return yamlContent
 }
 
 /**
- * Parse a mizu.yml file content into a structured object.
+ * Parse mizu.yml content into a validated MizuYml object.
  */
-export function parseMizuYml(content: string): MizuYmlFile {
-  return yaml.load(content) as MizuYmlFile
+export function parseMizuYml(content: string): MizuYml {
+  return MizuYmlSchema.parse(yaml.load(content))
 }
 
 export { type MizuYml, MizuYmlSchema } from './schema'

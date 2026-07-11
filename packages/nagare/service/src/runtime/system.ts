@@ -2,12 +2,9 @@
  * Runtime system management: availability probes, startup, and dashboard info.
  */
 
-import { createLogger } from '@mizu/logger'
 import { runtimeCli, runtimeCliJson } from './cli'
-import { CONTAINER_BIN, MIZU_DNS_DOMAIN } from './constants'
+import { CONTAINER_BIN } from './constants'
 import type { InspectPayload, RuntimeInfoResult } from './types'
-
-const logger = createLogger('runtime:system')
 
 /**
  * Cheap read-only probe: the binary exists and the system services respond.
@@ -28,16 +25,6 @@ export async function isRuntimeAvailable(): Promise<boolean> {
  */
 export async function ensureRuntimeRunning(): Promise<void> {
   await runtimeCli(['system', 'start'], { timeoutMs: 120_000 })
-  try {
-    const { stdout } = await runtimeCli(['system', 'dns', 'ls'])
-    if (!stdout.includes(MIZU_DNS_DOMAIN)) {
-      logger.warn(
-        `DNS domain '${MIZU_DNS_DOMAIN}' is not provisioned — cross-container hostnames will not resolve. Run: sudo container system dns create ${MIZU_DNS_DOMAIN}`,
-      )
-    }
-  } catch {
-    // dns subcommand failures are non-fatal
-  }
 }
 
 /**

@@ -1,48 +1,31 @@
 'use client'
 
 import { code } from '@streamdown/code'
-import { IconCheck, IconChevronRight, IconCopy, IconFile } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconFile } from '@tabler/icons-react'
 import { useCallback, useMemo, useState } from 'react'
 import { Streamdown } from 'streamdown'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-type YamlFormat = 'docker-compose' | 'mizu'
-
 interface YamlPreviewPanelProps {
-  dockerComposeYaml: string
   mizuYaml: string
   className?: string
   onExport?: () => void
 }
 
-export function YamlPreviewPanel({
-  dockerComposeYaml,
-  mizuYaml,
-  className,
-  onExport,
-}: YamlPreviewPanelProps) {
-  const [format, setFormat] = useState<YamlFormat>('docker-compose')
+export function YamlPreviewPanel({ mizuYaml, className, onExport }: YamlPreviewPanelProps) {
   const [copied, setCopied] = useState(false)
-
-  const currentYaml = useMemo(() => {
-    return format === 'docker-compose' ? dockerComposeYaml : mizuYaml
-  }, [format, dockerComposeYaml, mizuYaml])
 
   // Wrap YAML in markdown code block for syntax highlighting
   const markdownContent = useMemo(() => {
-    return `\`\`\`yaml\n${currentYaml}\n\`\`\``
-  }, [currentYaml])
+    return `\`\`\`yaml\n${mizuYaml}\n\`\`\``
+  }, [mizuYaml])
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(currentYaml)
+    await navigator.clipboard.writeText(mizuYaml)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }, [currentYaml])
-
-  const toggleFormat = useCallback(() => {
-    setFormat((prev) => (prev === 'docker-compose' ? 'mizu' : 'docker-compose'))
-  }, [])
+  }, [mizuYaml])
 
   return (
     <div className={cn('flex h-full flex-col bg-card', className)}>
@@ -50,14 +33,7 @@ export function YamlPreviewPanel({
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <IconFile className="size-4 text-muted-foreground" />
-          <button
-            type="button"
-            onClick={toggleFormat}
-            className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary"
-          >
-            <span>{format === 'docker-compose' ? 'docker-compose.yml' : 'mizu.yml'}</span>
-            <IconChevronRight className="size-3 text-muted-foreground" />
-          </button>
+          <span className="text-sm font-medium">mizu.yml</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -75,34 +51,6 @@ export function YamlPreviewPanel({
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Format tabs */}
-      <div className="flex gap-1 border-b px-2 py-1">
-        <button
-          type="button"
-          onClick={() => setFormat('docker-compose')}
-          className={cn(
-            'rounded-md px-2 py-1 text-xs transition-colors',
-            format === 'docker-compose'
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          docker-compose.yml
-        </button>
-        <button
-          type="button"
-          onClick={() => setFormat('mizu')}
-          className={cn(
-            'rounded-md px-2 py-1 text-xs transition-colors',
-            format === 'mizu'
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          mizu.yml
-        </button>
       </div>
 
       {/* YAML content with syntax highlighting */}

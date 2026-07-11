@@ -14,7 +14,11 @@ export {
   stopContainer,
   streamContainerLogs,
 } from './containers'
-export { containerDnsHost, resolveConnectionEnvVars } from './env-resolution'
+export {
+  entityContainerName,
+  resolveConnectionEnvVars,
+  resolveContainerIp,
+} from './env-resolution'
 export { pullImage, qualifyImageRef } from './images'
 export { ensureProjectNetwork, listNetworkNames, sanitizeName } from './networks'
 export { ensureRuntimeRunning, getRuntimeInfo, isRuntimeAvailable } from './system'

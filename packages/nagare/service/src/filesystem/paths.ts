@@ -52,7 +52,6 @@ export function getProjectFilePaths(workspaceSlug: string, projectSlug: string) 
   const projectDir = getProjectPath(workspaceSlug, projectSlug)
   return {
     dir: projectDir,
-    dockerCompose: join(projectDir, 'docker-compose.yml'),
     mizuYml: join(projectDir, 'mizu.yml'),
     env: join(projectDir, '.env'),
     envExample: join(projectDir, '.env.example'),

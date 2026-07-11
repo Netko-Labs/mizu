@@ -1,8 +1,10 @@
 /**
  * Connection environment variable resolution for Mizu.
- * Resolves service connections into env vars whose hosts are `.mizu` DNS
- * names — the local domain served by `container system dns`, resolvable from
- * both the host and other containers, stable across restarts.
+ *
+ * Apple `container` (as of 1.1.0) has no container-name DNS — verified
+ * empirically — so connections are wired by the target container's CURRENT
+ * IP, resolved at deploy time. The supervisor re-deploys dependents when a
+ * target container comes back with a new IP.
  */
 
 import { createLogger } from '@mizu/logger'
@@ -16,7 +18,7 @@ import {
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import { decrypt } from '../shared/crypto'
-import { MIZU_DNS_DOMAIN } from './constants'
+import { getContainerStatus } from './containers'
 import { sanitizeName } from './networks'
 
 const logger = createLogger('runtime:env-resolution')
@@ -29,13 +31,23 @@ const DEFAULT_PORTS: Record<string, number> = {
   redis: 6379,
 }
 
-/** DNS host for a deployed container */
-export function containerDnsHost(projectSlug: string, entityName: string): string {
-  return `mizu-${sanitizeName(projectSlug)}-${sanitizeName(entityName)}.${MIZU_DNS_DOMAIN}`
+/** Deterministic container name for a deployed entity */
+export function entityContainerName(projectSlug: string, entityName: string): string {
+  return `mizu-${sanitizeName(projectSlug)}-${sanitizeName(entityName)}`
+}
+
+/** Current IP of a container, or null when it isn't running */
+export async function resolveContainerIp(containerName: string): Promise<string | null> {
+  try {
+    const status = await getContainerStatus(containerName)
+    return status.running ? status.ipv4Address : null
+  } catch {
+    return null
+  }
 }
 
 /**
- * Build a connection string for a database using its DNS name as the host.
+ * Build a connection string for a database using its container IP as host.
  */
 function buildConnectionString(
   type: DatabaseType,
@@ -60,8 +72,8 @@ function buildConnectionString(
 
 /**
  * Resolve all outgoing connection env vars for a service.
- * Looks up serviceConnectionTable for connections FROM this service and
- * builds env vars using `.mizu` DNS names as hosts.
+ * Targets must be running (deploy databases first); unresolvable targets are
+ * skipped with a warning so the deploy still proceeds.
  *
  * @returns Record of env var name → value
  */
@@ -102,8 +114,17 @@ export async function resolveConnectionEnvVars(
           continue
         }
 
+        const containerName = entityContainerName(projectSlug, database.name)
+        const host = await resolveContainerIp(database.containerId ?? containerName)
+        if (!host) {
+          logger.warn(
+            { connectionId: conn.id, databaseId: conn.toDatabaseId },
+            'Target database is not running — env var skipped (deploy it first)',
+          )
+          continue
+        }
+
         const credentials: DatabaseCredentials = JSON.parse(decrypt(database.credentials))
-        const host = containerDnsHost(projectSlug, database.name)
         const port = database.port || DEFAULT_PORTS[database.type] || 5432
 
         envVars[conn.envVarName] = buildConnectionString(
@@ -126,8 +147,17 @@ export async function resolveConnectionEnvVars(
           continue
         }
 
-        // For service-to-service connections, provide the DNS host
-        envVars[conn.envVarName] = containerDnsHost(projectSlug, targetService.name)
+        const containerName = entityContainerName(projectSlug, targetService.name)
+        const host = await resolveContainerIp(targetService.containerId ?? containerName)
+        if (!host) {
+          logger.warn(
+            { connectionId: conn.id, serviceId: conn.toServiceId },
+            'Target service is not running — env var skipped (deploy it first)',
+          )
+          continue
+        }
+
+        envVars[conn.envVarName] = host
       }
     } catch (error) {
       logger.error(

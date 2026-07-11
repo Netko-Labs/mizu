@@ -1,6 +1,6 @@
-import yaml from 'js-yaml'
-import { generateAllFiles } from '../generators'
-import type { GeneratedFiles, MizuYmlFile, ProjectManifest } from '../generators/types'
+import { join } from 'node:path'
+import { generateAllFiles, type MizuYml, parseMizuYml as parseMizuYmlContent } from '../generators'
+import type { GeneratedFiles, ProjectManifest } from '../generators/types'
 import { ensureDir, exists, readFileContent, remove, writeFileAtomic } from './operations'
 import { getProjectFilePaths, getProjectPath, getWorkspacePath } from './paths'
 
@@ -12,7 +12,7 @@ export async function writeProjectFiles(
   manifest: ProjectManifest,
   options: { includeComments?: boolean } = {},
 ): Promise<void> {
-  const files = generateAllFiles(manifest, options)
+  const files = await generateAllFiles(manifest, options)
   const paths = getProjectFilePaths(manifest.workspace.slug, manifest.project.slug)
 
   // Ensure project directory exists
@@ -20,11 +20,17 @@ export async function writeProjectFiles(
 
   // Write all files atomically
   await Promise.all([
-    writeFileAtomic(paths.dockerCompose, files['docker-compose.yml']),
     writeFileAtomic(paths.mizuYml, files['mizu.yml']),
     writeFileAtomic(paths.env, files['.env']),
     writeFileAtomic(paths.envExample, files['.env.example']),
   ])
+
+  // Best-effort cleanup of the legacy docker-compose.yml artifact
+  try {
+    await remove(join(paths.dir, 'docker-compose.yml'))
+  } catch {
+    // Nothing to clean up
+  }
 }
 
 /**
@@ -37,15 +43,13 @@ export async function readProjectFiles(
 ): Promise<Partial<GeneratedFiles>> {
   const paths = getProjectFilePaths(workspaceSlug, projectSlug)
 
-  const [dockerCompose, mizuYml, env, envExample] = await Promise.all([
-    readFileContent(paths.dockerCompose),
+  const [mizuYml, env, envExample] = await Promise.all([
     readFileContent(paths.mizuYml),
     readFileContent(paths.env),
     readFileContent(paths.envExample),
   ])
 
   return {
-    ...(dockerCompose && { 'docker-compose.yml': dockerCompose }),
     ...(mizuYml && { 'mizu.yml': mizuYml }),
     ...(env && { '.env': env }),
     ...(envExample && { '.env.example': envExample }),
@@ -82,7 +86,7 @@ export async function deleteWorkspace(workspaceSlug: string): Promise<void> {
 export async function parseMizuYml(
   workspaceSlug: string,
   projectSlug: string,
-): Promise<MizuYmlFile | null> {
+): Promise<MizuYml | null> {
   const paths = getProjectFilePaths(workspaceSlug, projectSlug)
   const content = await readFileContent(paths.mizuYml)
 
@@ -91,7 +95,7 @@ export async function parseMizuYml(
   }
 
   try {
-    return yaml.load(content) as MizuYmlFile
+    return parseMizuYmlContent(content)
   } catch {
     return null
   }

@@ -5,7 +5,7 @@
  */
 
 import { createLogger } from '@mizu/logger'
-import { databaseTable, serviceTable } from '@mizu/nagare-domain'
+import { databaseTable, serviceConnectionTable, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq, isNotNull } from 'drizzle-orm'
 import { syncIngress } from '../ingress'
@@ -83,6 +83,42 @@ async function loadDesiredState(): Promise<EntityRecord[]> {
   ]
 }
 
+/**
+ * Connection env vars hold target container IPs, and a healed container comes
+ * back with a NEW IP — re-deploy dependents so their wiring stays live.
+ * One level deep: service→service IP chains are rare enough for v0.1.
+ */
+async function redeployDependents(entity: EntityRecord): Promise<void> {
+  const targetColumn =
+    entity.kind === 'service'
+      ? serviceConnectionTable.toServiceId
+      : serviceConnectionTable.toDatabaseId
+
+  const dependents = await db
+    .select({ fromServiceId: serviceConnectionTable.fromServiceId })
+    .from(serviceConnectionTable)
+    .where(eq(targetColumn, entity.id))
+
+  for (const fromServiceId of new Set(dependents.map((d) => d.fromServiceId))) {
+    const [dependent] = await db
+      .select({ status: serviceTable.status })
+      .from(serviceTable)
+      .where(eq(serviceTable.id, fromServiceId))
+    if (!dependent || !WANTS_RUNNING.has(dependent.status)) continue
+
+    logger.info(
+      { dependent: fromServiceId, target: entity.id },
+      'Target came back with a new IP — re-deploying dependent service',
+    )
+    try {
+      const result = await deployService(fromServiceId)
+      if (!result.success) throw new Error(result.error ?? 'deploy failed')
+    } catch (error) {
+      logger.error({ dependent: fromServiceId, error: String(error) }, 'Dependent re-deploy failed')
+    }
+  }
+}
+
 async function healCrashed(entity: EntityRecord, state: SupervisorState): Promise<void> {
   const tracker = getTracker(state, entity.id)
   if (tracker.exhausted || Date.now() < tracker.nextAttemptAt) return
@@ -101,6 +137,7 @@ async function healCrashed(entity: EntityRecord, state: SupervisorState): Promis
     await setEntityStatus(entity, 'running')
     tracker.attempts = 0
     tracker.nextAttemptAt = 0
+    await redeployDependents(entity)
   } catch (error) {
     logger.error(
       { entity: entity.id, attempt: tracker.attempts, error: String(error) },
@@ -139,6 +176,7 @@ async function healMissing(entity: EntityRecord, state: SupervisorState): Promis
     }
     tracker.attempts = 0
     tracker.nextAttemptAt = 0
+    await redeployDependents(entity)
   } catch (error) {
     logger.error({ entity: entity.id, error: String(error) }, 'Re-deploy attempt failed')
     if (tracker.attempts >= MAX_RESTART_ATTEMPTS) {

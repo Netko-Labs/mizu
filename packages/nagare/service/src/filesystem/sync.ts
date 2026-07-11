@@ -25,7 +25,7 @@ export async function exportProject(manifest: ProjectManifest): Promise<SyncResu
 
   try {
     await writeProjectFiles(manifest)
-    result.filesWritten = ['docker-compose.yml', 'mizu.yml', '.env', '.env.example']
+    result.filesWritten = ['mizu.yml', '.env', '.env.example']
   } catch (error) {
     result.success = false
     result.errors.push(error instanceof Error ? error.message : String(error))
@@ -40,7 +40,7 @@ export async function exportProject(manifest: ProjectManifest): Promise<SyncResu
  *
  * Since files are the source of truth, this would be used to:
  * 1. Read files on startup
- * 2. Parse docker-compose.yml and mizu.yml
+ * 2. Parse mizu.yml
  * 3. Build the ProjectManifest
  * 4. Sync to database for fast querying
  */
@@ -50,10 +50,9 @@ export async function buildManifestFromFiles(
 ): Promise<ProjectManifest | null> {
   // TODO: Implement file -> manifest parsing
   // This requires:
-  // 1. Reading and parsing docker-compose.yml to extract services, volumes, networks
-  // 2. Reading and parsing mizu.yml for orchestration config
-  // 3. Reading .env for environment variables
-  // 4. Building the full ProjectManifest
+  // 1. Reading and parsing mizu.yml to extract services, databases, volumes, networks
+  // 2. Reading .env for environment variables
+  // 3. Building the full ProjectManifest
 
   // For now, return null - files are written from DB state
   return null
@@ -82,7 +81,7 @@ export async function syncFilesToDb(
   // 1. Upserting workspace
   // 2. Upserting project
   // 3. Syncing services, databases, volumes, networks, etc.
-  // 4. Rebuilding connections based on docker-compose depends_on
+  // 4. Rebuilding connections based on mizu.yml dependsOn
 
   return manifest
 }

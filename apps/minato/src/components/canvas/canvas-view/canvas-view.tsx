@@ -180,10 +180,7 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
                 </button>
               </div>
               <div className="flex-1 overflow-auto p-3">
-                <YamlPreviewPanel
-                  dockerComposeYaml={generatedFiles?.['docker-compose.yml'] ?? ''}
-                  mizuYaml={generatedFiles?.['mizu.yml'] ?? ''}
-                />
+                <YamlPreviewPanel mizuYaml={generatedFiles?.['mizu.yml'] ?? ''} />
               </div>
             </div>
           </motion.div>
