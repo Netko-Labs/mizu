@@ -34,11 +34,17 @@ export interface CpuStats {
   loadAverage: number[]
 }
 
+export interface TailscaleInfo {
+  dnsName: string
+  ip: string
+}
+
 export interface MizuStatus {
   mizuHome: string
   mizuHomeExists: boolean
   runtimeAvailable: boolean
   runtimeInfo: RuntimeInfo | null
+  tailscale: TailscaleInfo | null
 }
 
 export interface DashboardStats {

@@ -6,6 +6,7 @@
 import { cpus, freemem, hostname, loadavg, platform, release, totalmem, uptime } from 'node:os'
 import { createLogger } from '@mizu/logger'
 import { ensureDir, exists, getMizuHome, getWorkspacesPath } from '../filesystem'
+import { getTailscaleIdentity } from '../ingress/identity'
 import { getRuntimeInfo, isRuntimeAvailable } from '../runtime'
 
 const logger = createLogger('system')
@@ -118,6 +119,7 @@ export async function getMizuStatus(): Promise<{
   mizuHomeExists: boolean
   runtimeAvailable: boolean
   runtimeInfo: Awaited<ReturnType<typeof getRuntimeInfo>> | null
+  tailscale: Awaited<ReturnType<typeof getTailscaleIdentity>>
 }> {
   const mizuHome = getMizuHome()
   const mizuHomeExists = await exists(mizuHome)
@@ -137,6 +139,7 @@ export async function getMizuStatus(): Promise<{
     mizuHomeExists,
     runtimeAvailable,
     runtimeInfo,
+    tailscale: await getTailscaleIdentity(),
   }
 }
 

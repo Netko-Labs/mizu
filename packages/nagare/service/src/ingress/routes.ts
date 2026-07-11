@@ -10,6 +10,7 @@ import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import { listContainers, sanitizeName } from '../runtime'
 import { DEFAULT_BASE_DOMAIN, INGRESS_ADMIN_PORT, INGRESS_HTTP_PORT } from './constants'
+import { getTailscaleIdentity } from './identity'
 import type { CaddyConfig, CaddyRoute } from './types'
 
 /** The public host a deployed service is served on */
@@ -31,7 +32,11 @@ export async function getIngressBaseDomain(): Promise<string> {
  * Build the full desired Caddy config from the database + live container IPs.
  */
 export async function buildIngressConfig(): Promise<CaddyConfig> {
-  const [baseDomain, containers] = await Promise.all([getIngressBaseDomain(), listContainers()])
+  const [baseDomain, containers, tailscale] = await Promise.all([
+    getIngressBaseDomain(),
+    listContainers(),
+    getTailscaleIdentity(),
+  ])
   const ipByContainer = new Map(
     containers
       .filter((c) => c.running && c.ipv4Address)
@@ -68,6 +73,35 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
       ],
     })
   }
+
+  // Fallback for unmatched hosts (raw IP, unknown names): a landing page
+  // listing every routed app — never a blank white screen.
+  const appList = routes
+    .map((route) => `        <li><code>http://${route.match?.[0]?.host[0]}</code></li>`)
+    .join('\n')
+  const identityLines = [
+    tailscale
+      ? `      <p>tailnet: <code>${tailscale.dnsName}</code> (<code>${tailscale.ip}</code>)</p>`
+      : '',
+    `      <p>base domain: <code>${baseDomain}</code>${baseDomain === 'localhost' ? ' — *.localhost only resolves on this machine; set a real domain in instance settings (or point DNS at this box) for LAN/tailnet access' : ''}</p>`,
+  ].join('\n')
+  routes.push({
+    handle: [
+      {
+        handler: 'static_response',
+        status_code: 200,
+        headers: { 'content-type': ['text/html; charset=utf-8'] },
+        body: `<!doctype html><html><head><title>mizu ingress</title><style>body{background:#000;color:#a3a3a3;font-family:ui-monospace,monospace;padding:3rem}code{color:#60a5fa}h1{color:#fff;font-size:1.2rem}li{margin:.3rem 0}</style></head><body>
+      <h1>水 mizu ingress</h1>
+      <p>this is the mizu reverse proxy — apps are served by hostname:</p>
+      <ul>
+${appList || '        <li>no apps deployed yet</li>'}
+      </ul>
+${identityLines}
+    </body></html>`,
+      },
+    ],
+  })
 
   return {
     admin: { listen: `0.0.0.0:${INGRESS_ADMIN_PORT}` },

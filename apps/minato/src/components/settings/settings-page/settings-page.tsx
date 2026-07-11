@@ -207,6 +207,12 @@ export function SettingsPage() {
                   {stats?.mizu.runtimeAvailable ? stats.mizu.runtimeInfo?.version : 'n/a'}
                 </span>
               </span>
+              <span>
+                tailnet{' '}
+                <span className="text-neutral-500">
+                  {stats?.mizu.tailscale ? stats.mizu.tailscale.dnsName : 'not connected'}
+                </span>
+              </span>
             </div>
           </div>
         </motion.div>
