@@ -5,6 +5,7 @@
  * every pass, healing IP drift within seconds). Databases are never proxied.
  */
 
+import { nagareEnvConfig } from '@mizu/nagare-config'
 import { instanceSettingTable, projectTable, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
@@ -19,7 +20,8 @@ export function serviceIngressHost(
   projectSlug: string,
   baseDomain: string,
 ): string {
-  return `${sanitizeName(serviceName)}.${sanitizeName(projectSlug)}.${baseDomain}`
+  // Single label so one wildcard cert (*.domain) covers every app
+  return `${sanitizeName(serviceName)}-${sanitizeName(projectSlug)}.${baseDomain}`
 }
 
 /** Base domain from instance settings, defaulting to *.localhost */
@@ -103,17 +105,50 @@ ${identityLines}
     ],
   })
 
-  return {
+  // Wildcard TLS via Cloudflare DNS-01 when a real domain + token are set.
+  // One cert (*.domain) covers every single-label app host; per-host issuance
+  // is skipped explicitly so caddy never races Let's Encrypt per app.
+  const cfToken = nagareEnvConfig.ingress.cloudflareApiToken
+  const tlsEnabled = Boolean(cfToken) && baseDomain !== 'localhost'
+  const appHosts = routes.flatMap((route) => route.match?.[0]?.host ?? [])
+
+  const config: CaddyConfig = {
     admin: { listen: `0.0.0.0:${INGRESS_ADMIN_PORT}` },
     apps: {
       http: {
         servers: {
           mizu: {
-            listen: [`:${INGRESS_HTTP_PORT}`],
+            listen: tlsEnabled ? [`:${INGRESS_HTTP_PORT}`, ':443'] : [`:${INGRESS_HTTP_PORT}`],
             routes,
+            ...(tlsEnabled ? { automatic_https: { skip_certificates: appHosts } } : {}),
           },
         },
       },
+      ...(tlsEnabled && cfToken
+        ? {
+            tls: {
+              certificates: { automate: [`*.${baseDomain}`] },
+              automation: {
+                policies: [
+                  {
+                    subjects: [`*.${baseDomain}`],
+                    issuers: [
+                      {
+                        module: 'acme' as const,
+                        challenges: {
+                          dns: {
+                            provider: { name: 'cloudflare' as const, api_token: cfToken },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          }
+        : {}),
     },
   }
+  return config
 }

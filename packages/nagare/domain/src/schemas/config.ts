@@ -11,6 +11,10 @@ export const NagareConfigSchema = z.object({
   db: z.object({
     url: z.string(),
   }),
+  ingress: z.object({
+    /** Cloudflare API token (Zone:DNS:Edit) enabling DNS-01 wildcard TLS */
+    cloudflareApiToken: z.string().optional(),
+  }),
 })
 
 export type NagareConfig = z.infer<typeof NagareConfigSchema>

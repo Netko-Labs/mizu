@@ -6,6 +6,7 @@
  */
 
 import { createLogger } from '@mizu/logger'
+import { nagareEnvConfig } from '@mizu/nagare-config'
 import {
   createVolume,
   type InspectPayload,
@@ -24,6 +25,7 @@ import {
   INGRESS_ADMIN_URL,
   INGRESS_CONTAINER,
   INGRESS_HTTP_PORT,
+  INGRESS_REVISION,
   INGRESS_VOLUME,
 } from './constants'
 
@@ -67,6 +69,8 @@ async function createIngressContainer(networks: string[]): Promise<void> {
     '-p',
     `${INGRESS_HTTP_PORT}:${INGRESS_HTTP_PORT}`,
     '-p',
+    '443:443',
+    '-p',
     `127.0.0.1:${INGRESS_ADMIN_PORT}:${INGRESS_ADMIN_PORT}`,
     // Caddy honors CADDY_ADMIN when no config file overrides it — this makes
     // the admin API reachable through the published port.
@@ -78,7 +82,13 @@ async function createIngressContainer(networks: string[]): Promise<void> {
     `${MIZU_LABELS.managed}=true`,
     '-l',
     'mizu.system=ingress',
+    '-l',
+    `mizu.ingress.rev=${INGRESS_REVISION}`,
   ]
+  const cfToken = nagareEnvConfig.ingress.cloudflareApiToken
+  if (cfToken) {
+    args.push('-e', `CLOUDFLARE_API_TOKEN=${cfToken}`)
+  }
   for (const network of networks) {
     args.push('--network', network)
   }
@@ -111,6 +121,14 @@ export async function ensureIngress(): Promise<boolean> {
 
   if (!existing) {
     logger.info({ networks }, 'Creating ingress container')
+    await createIngressContainer(networks)
+    return true
+  }
+
+  const revision = existing.configuration?.labels?.['mizu.ingress.rev']
+  if (revision !== INGRESS_REVISION) {
+    logger.info({ revision }, 'Ingress container outdated — recreating')
+    await removeContainer(INGRESS_CONTAINER, true)
     await createIngressContainer(networks)
     return true
   }

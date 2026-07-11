@@ -11,6 +11,9 @@ const nagareConfig: NagareConfig = {
   db: {
     url: process.env.DATABASE_URL ?? '',
   },
+  ingress: {
+    cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN || undefined,
+  },
 }
 
 export const nagareEnvConfig = NagareConfigSchema.parse(nagareConfig)

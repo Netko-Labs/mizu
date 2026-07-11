@@ -1,7 +1,11 @@
 /** The managed Caddy container that fronts every deployed service */
 export const INGRESS_CONTAINER = 'mizu-ingress'
 
-export const CADDY_IMAGE = 'docker.io/library/caddy:2-alpine'
+// Caddy build with the cloudflare DNS module (for DNS-01 wildcard TLS)
+export const CADDY_IMAGE = 'ghcr.io/caddybuilds/caddy-cloudflare:latest'
+
+/** Bump to force ingress container recreation when its shape changes */
+export const INGRESS_REVISION = '2'
 
 /** Caddy admin API, published loopback-only on the host */
 export const INGRESS_ADMIN_PORT = 2019

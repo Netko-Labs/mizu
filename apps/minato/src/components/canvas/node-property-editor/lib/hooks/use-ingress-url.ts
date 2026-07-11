@@ -15,5 +15,6 @@ export function useIngressUrl(
   const { data: settings } = useQuery(instanceSettingsQueries.get())
   if (!exposed || !projectSlug) return null
   const baseDomain = settings?.domain || 'localhost'
-  return `http://${sanitizeResourceName(serviceName)}.${sanitizeResourceName(projectSlug)}.${baseDomain}`
+  const scheme = baseDomain === 'localhost' ? 'http' : 'https'
+  return `${scheme}://${sanitizeResourceName(serviceName)}-${sanitizeResourceName(projectSlug)}.${baseDomain}`
 }

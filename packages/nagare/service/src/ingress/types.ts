@@ -24,7 +24,22 @@ export interface CaddyConfig {
         mizu: {
           listen: string[]
           routes: CaddyRoute[]
+          automatic_https?: { skip_certificates: string[] }
         }
+      }
+    }
+    tls?: {
+      certificates: { automate: string[] }
+      automation: {
+        policies: Array<{
+          subjects: string[]
+          issuers: Array<{
+            module: 'acme'
+            challenges: {
+              dns: { provider: { name: 'cloudflare'; api_token: string } }
+            }
+          }>
+        }>
       }
     }
   }
