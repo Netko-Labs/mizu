@@ -9,16 +9,22 @@ import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import {
   createContainer,
+  createVolume,
+  ensureProjectNetwork,
+  execInContainer,
+  MIZU_LABELS,
+  pullImage,
   removeContainer,
+  sanitizeName,
   startContainer,
   stopContainer,
-} from '../../docker/containers'
-import { pullImage } from '../../docker/images'
-import { ensureProjectNetwork, sanitizeDockerName } from '../../docker/project-network'
-import { createVolume } from '../../docker/volumes'
+} from '../../runtime'
 import { decrypt } from '../../shared/crypto'
 
 const logger = createLogger('service:deploy-database')
+
+const READY_ATTEMPTS = 30
+const READY_INTERVAL_MS = 2_000
 
 const DATABASE_IMAGES: Record<DatabaseType, string> = {
   postgres: 'postgres',
@@ -36,12 +42,31 @@ const DEFAULT_PORTS: Record<DatabaseType, number> = {
   mariadb: 3306,
 }
 
+/**
+ * Where each database keeps its data, adjusted for Apple container volumes:
+ * named volumes are ext4 disks whose root contains lost+found, so engines
+ * that refuse a non-empty data directory get pointed at a subdirectory.
+ */
 const DATA_PATHS: Record<DatabaseType, string> = {
   postgres: '/var/lib/postgresql/data',
   mysql: '/var/lib/mysql',
   redis: '/data',
   mongodb: '/data/db',
   mariadb: '/var/lib/mysql',
+}
+
+function buildDataDirConfig(type: DatabaseType): { env: Record<string, string>; args: string[] } {
+  switch (type) {
+    case 'postgres':
+      return { env: { PGDATA: '/var/lib/postgresql/data/pgdata' }, args: [] }
+    case 'mysql':
+    case 'mariadb':
+      return { env: {}, args: ['--datadir=/var/lib/mysql/data'] }
+    // redis tolerates lost+found; mongodb keeps the default dbpath (its
+    // entrypoint owns the mount) — revisit if init complains.
+    default:
+      return { env: {}, args: [] }
+  }
 }
 
 function buildEnvVars(
@@ -80,53 +105,44 @@ function buildEnvVars(
   }
 }
 
-function buildHealthCheck(type: DatabaseType) {
+/** Exec-based readiness probe (replaces docker healthchecks). */
+function buildReadinessProbe(type: DatabaseType, credentials: DatabaseCredentials): string[] {
   switch (type) {
     case 'postgres':
-      return {
-        test: ['CMD-SHELL', 'pg_isready -U postgres'],
-        interval: 10,
-        timeout: 5,
-        retries: 5,
-        startPeriod: 30,
-      }
+      return ['pg_isready', '-U', credentials.username]
     case 'mysql':
-      return {
-        test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost'],
-        interval: 10,
-        timeout: 5,
-        retries: 5,
-        startPeriod: 30,
-      }
+      return ['mysqladmin', 'ping', '-h', '127.0.0.1', '--silent']
     case 'mariadb':
-      return {
-        test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized'],
-        interval: 10,
-        timeout: 5,
-        retries: 5,
-        startPeriod: 30,
-      }
+      return ['healthcheck.sh', '--connect', '--innodb_initialized']
     case 'mongodb':
-      return {
-        test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"],
-        interval: 10,
-        timeout: 5,
-        retries: 5,
-        startPeriod: 30,
-      }
+      return ['mongosh', '--quiet', '--eval', "db.adminCommand('ping')"]
     case 'redis':
-      return {
-        test: ['CMD', 'redis-cli', 'ping'],
-        interval: 10,
-        timeout: 5,
-        retries: 5,
-        startPeriod: 10,
-      }
+      return credentials.password
+        ? ['redis-cli', '-a', credentials.password, 'ping']
+        : ['redis-cli', 'ping']
   }
 }
 
+async function waitForReady(
+  containerId: string,
+  probe: string[],
+  databaseId: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < READY_ATTEMPTS; attempt++) {
+    if (await execInContainer(containerId, probe)) {
+      logger.info({ databaseId, containerId, attempt }, 'Database ready')
+      return
+    }
+    await Bun.sleep(READY_INTERVAL_MS)
+  }
+  throw new Error(
+    `Database did not become ready within ${(READY_ATTEMPTS * READY_INTERVAL_MS) / 1000}s`,
+  )
+}
+
 /**
- * Deploys a database by creating and starting its Docker container.
+ * Deploys a database by creating and starting its container, then waiting
+ * for it to accept connections.
  */
 export const deployDatabase = async (databaseId: string): Promise<void> => {
   const [database] = await db.select().from(databaseTable).where(eq(databaseTable.id, databaseId))
@@ -149,16 +165,8 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
   try {
     // Cleanup stale container if exists
     if (database.containerId) {
-      try {
-        await stopContainer(database.containerId)
-      } catch {
-        // Container may already be stopped
-      }
-      try {
-        await removeContainer(database.containerId, true)
-      } catch {
-        // Container may already be removed
-      }
+      await stopContainer(database.containerId).catch(() => {})
+      await removeContainer(database.containerId, true).catch(() => {})
     }
 
     // 1. Set status → starting
@@ -172,8 +180,7 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
     await pullImage(DATABASE_IMAGES[dbType], version)
 
     // 3. Ensure project network
-    const networkName = `mizu-${sanitizeDockerName(project.slug)}`
-    await ensureProjectNetwork(project.id, project.slug)
+    const networkName = await ensureProjectNetwork(project.id, project.slug)
 
     // 4. Parse credentials
     let credentials: DatabaseCredentials = {
@@ -189,28 +196,31 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
       }
     }
 
-    // 5. Build env vars
-    const env = buildEnvVars(dbType, credentials)
+    // 5. Build env vars + data-dir handling
+    const dataDir = buildDataDirConfig(dbType)
+    const env = { ...buildEnvVars(dbType, credentials), ...dataDir.env }
 
     // 6. Build container name + volume
-    const containerName = `mizu-${sanitizeDockerName(project.slug)}-${sanitizeDockerName(database.name)}`
+    const containerName = `mizu-${sanitizeName(project.slug)}-${sanitizeName(database.name)}`
     const volumeName = `${containerName}-data`
     await createVolume(volumeName)
 
-    // 7. Build health check
-    const healthCheck = buildHealthCheck(dbType)
+    // Guard against name collisions from a lost containerId (best-effort)
+    await removeContainer(containerName, true).catch(() => {})
 
-    // 8. Build port mapping
+    // 7. Build port mapping
     const hostPort = database.port || DEFAULT_PORTS[dbType]
     const containerPort = DEFAULT_PORTS[dbType]
 
-    // Redis with password needs special CMD
+    // Redis with password needs special CMD; mysql/mariadb take datadir args
     const cmd =
       dbType === 'redis' && credentials.password
         ? ['redis-server', '--requirepass', credentials.password]
-        : undefined
+        : dataDir.args.length > 0
+          ? dataDir.args
+          : undefined
 
-    // 9. Create container
+    // 8. Create container
     const containerId = await createContainer({
       name: containerName,
       image: `${DATABASE_IMAGES[dbType]}:${version}`,
@@ -219,20 +229,19 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
       ports: [{ containerPort, hostPort, protocol: 'tcp' }],
       volumes: [{ source: volumeName, target: DATA_PATHS[dbType] }],
       network: networkName,
-      restartPolicy: 'unless-stopped',
-      healthCheck,
       labels: {
-        'mizu.managed': 'true',
-        'mizu.project': project.id,
-        'mizu.entity': databaseId,
-        'mizu.entity.type': 'database',
+        [MIZU_LABELS.managed]: 'true',
+        [MIZU_LABELS.project]: project.id,
+        [MIZU_LABELS.entity]: databaseId,
+        [MIZU_LABELS.entityType]: 'database',
       },
     })
 
-    // 10. Start container
+    // 9. Start container + wait until it accepts connections
     await startContainer(containerId)
+    await waitForReady(containerId, buildReadinessProbe(dbType, credentials), databaseId)
 
-    // 11. Update DB
+    // 10. Update DB
     await db
       .update(databaseTable)
       .set({ status: 'running', containerId })

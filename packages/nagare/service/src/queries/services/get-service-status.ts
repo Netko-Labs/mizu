@@ -2,22 +2,20 @@ import { createLogger } from '@mizu/logger'
 import { type ServiceStatus, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
-import { getContainerStatus } from '../../docker/containers'
+import { getContainerStatus } from '../../runtime'
 
 const logger = createLogger('service:get-service-status')
 
 /** Map Docker container state to Mizu service status */
-function mapDockerState(state: string): ServiceStatus {
+function mapRuntimeState(state: string): ServiceStatus {
   switch (state) {
     case 'running':
       return 'running'
     case 'created':
       return 'created'
-    case 'restarting':
-      return 'starting'
-    case 'paused':
-    case 'exited':
-    case 'dead':
+    case 'stopping':
+      return 'stopping'
+    case 'stopped':
       return 'stopped'
     default:
       return 'error'
@@ -26,7 +24,7 @@ function mapDockerState(state: string): ServiceStatus {
 
 /**
  * Gets the current status of a service.
- * If the service has a containerId, queries Docker for live status and syncs DB if drifted.
+ * If the service has a containerId, queries the runtime for live status and syncs DB if drifted.
  */
 export const getServiceStatus = async (serviceId: string): Promise<ServiceStatus | undefined> => {
   const [result] = await db
@@ -44,7 +42,7 @@ export const getServiceStatus = async (serviceId: string): Promise<ServiceStatus
 
   try {
     const containerStatus = await getContainerStatus(result.containerId)
-    const liveStatus = mapDockerState(containerStatus.state)
+    const liveStatus = mapRuntimeState(containerStatus.state)
 
     // Sync DB if status drifted
     if (liveStatus !== result.status) {

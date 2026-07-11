@@ -51,7 +51,10 @@ export async function getRuntimeInfo(): Promise<RuntimeInfoResult> {
   ])
 
   const containerList = Array.isArray(containers) ? containers : []
-  const version = versionResult.stdout.trim().split(/\s+/).find((token) => /^\d+\./.test(token))
+  const version = versionResult.stdout
+    .trim()
+    .split(/\s+/)
+    .find((token) => /^\d+\./.test(token))
 
   return {
     version: version ?? versionResult.stdout.trim(),

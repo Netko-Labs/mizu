@@ -1,9 +1,9 @@
 import {
   getCpuStats,
   getDashboardStats,
-  getDockerInfo,
   getMemoryStats,
   getMizuStatus,
+  getRuntimeInfo,
   getSystemInfo,
   initializeMizu,
 } from '@mizu/nagare-service'
@@ -13,7 +13,7 @@ import { authPlugin } from '../setup'
 export const systemRoutes = new Elysia({ name: 'system', prefix: '/system' })
   .use(authPlugin)
   // 🐳 docker daemon details
-  .get('/docker-info', { auth: true }, () => getDockerInfo())
+  .get('/docker-info', { auth: true }, () => getRuntimeInfo())
   // 🖥 host system info
   .get('/info', { auth: true }, () => getSystemInfo())
   // 🧠 memory stats

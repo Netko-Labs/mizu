@@ -1,6 +1,6 @@
 import { createLogger } from '@mizu/logger'
 import { nagareEnvConfig } from '@mizu/nagare-config'
-import { isDockerAvailable } from '@mizu/nagare-service'
+import { isRuntimeAvailable } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { connectionsRoutes } from './routes/connections'
 import { databasesRoutes } from './routes/databases'
@@ -47,7 +47,7 @@ export const app = new Elysia()
   // ٩(◕‿◕)۶ health check — is the daemon flowing?
   .get('/health', async () => ({
     status: 'ok',
-    docker: await isDockerAvailable(),
+    docker: await isRuntimeAvailable(),
     timestamp: new Date().toISOString(),
   }))
   .use(workspacesRoutes)

@@ -89,7 +89,10 @@ export async function stopContainer(
   try {
     await runtimeCli(['stop', '-t', String(timeout), containerId])
   } catch (error) {
-    if (error instanceof RuntimeError && (error.code === 'NOT_FOUND' || error.code === 'NOT_RUNNING')) {
+    if (
+      error instanceof RuntimeError &&
+      (error.code === 'NOT_FOUND' || error.code === 'NOT_RUNNING')
+    ) {
       return
     }
     throw error

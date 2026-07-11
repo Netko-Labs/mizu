@@ -4,13 +4,15 @@ import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import {
   createContainer,
+  ensureProjectNetwork,
+  MIZU_LABELS,
+  pullImage,
   removeContainer,
+  resolveConnectionEnvVars,
+  sanitizeName,
   startContainer,
   stopContainer,
-} from '../../docker/containers'
-import { resolveConnectionEnvVars } from '../../docker/env-resolution'
-import { pullImage } from '../../docker/images'
-import { ensureProjectNetwork, sanitizeDockerName } from '../../docker/project-network'
+} from '../../runtime'
 import { decrypt } from '../../shared/crypto'
 
 const logger = createLogger('service:deploy-service')
@@ -79,8 +81,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     // 3. Ensure project network
     await db.update(serviceTable).set({ status: 'starting' }).where(eq(serviceTable.id, serviceId))
 
-    const networkName = `mizu-${sanitizeDockerName(project.slug)}`
-    await ensureProjectNetwork(project.id, project.slug)
+    const networkName = await ensureProjectNetwork(project.id, project.slug)
 
     // 4. Resolve connection env vars + merge user env vars
     const connectionEnvVars = await resolveConnectionEnvVars(serviceId, project.slug)
@@ -102,7 +103,10 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     const env = { ...connectionEnvVars, ...userEnvVars }
 
     // 5. Build container config
-    const containerName = `mizu-${sanitizeDockerName(project.slug)}-${sanitizeDockerName(service.name)}`
+    const containerName = `mizu-${sanitizeName(project.slug)}-${sanitizeName(service.name)}`
+
+    // Guard against name collisions from a lost containerId (best-effort)
+    await removeContainer(containerName, true).catch(() => {})
 
     const ports =
       (service.ports as Array<{ container: number; host?: number; protocol?: string }>) || []
@@ -117,12 +121,11 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
         protocol: (p.protocol as 'tcp' | 'udp') || 'tcp',
       })),
       network: networkName,
-      restartPolicy: 'unless-stopped',
       labels: {
-        'mizu.managed': 'true',
-        'mizu.project': project.id,
-        'mizu.entity': serviceId,
-        'mizu.entity.type': 'service',
+        [MIZU_LABELS.managed]: 'true',
+        [MIZU_LABELS.project]: project.id,
+        [MIZU_LABELS.entity]: serviceId,
+        [MIZU_LABELS.entityType]: 'service',
       },
     })
 

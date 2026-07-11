@@ -2,7 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { databaseTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
-import { startContainer, stopContainer } from '../../docker/containers'
+import { startContainer, stopContainer } from '../../runtime'
 
 const logger = createLogger('service:control-database')
 

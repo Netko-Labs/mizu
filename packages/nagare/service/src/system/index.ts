@@ -5,8 +5,8 @@
 
 import { cpus, freemem, hostname, loadavg, platform, release, totalmem, uptime } from 'node:os'
 import { createLogger } from '@mizu/logger'
-import { getDockerInfo, isDockerAvailable } from '../docker'
 import { ensureDir, exists, getMizuHome, getWorkspacesPath } from '../filesystem'
+import { getRuntimeInfo, isRuntimeAvailable } from '../runtime'
 
 const logger = createLogger('system')
 
@@ -117,16 +117,16 @@ export async function getMizuStatus(): Promise<{
   mizuHome: string
   mizuHomeExists: boolean
   dockerAvailable: boolean
-  dockerInfo: Awaited<ReturnType<typeof getDockerInfo>> | null
+  dockerInfo: Awaited<ReturnType<typeof getRuntimeInfo>> | null
 }> {
   const mizuHome = getMizuHome()
   const mizuHomeExists = await exists(mizuHome)
-  const dockerAvailable = await isDockerAvailable()
+  const dockerAvailable = await isRuntimeAvailable()
 
   let dockerInfo = null
   if (dockerAvailable) {
     try {
-      dockerInfo = await getDockerInfo()
+      dockerInfo = await getRuntimeInfo()
     } catch {
       // Docker info fetch failed, but Docker is available
     }

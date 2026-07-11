@@ -2,7 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { type Service, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
-import { removeContainer, stopContainer } from '../../docker/containers'
+import { removeContainer, stopContainer } from '../../runtime'
 
 const logger = createLogger('service:delete-service')
 

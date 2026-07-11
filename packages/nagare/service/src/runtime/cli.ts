@@ -43,7 +43,10 @@ export async function runtimeCli(args: string[], options?: CliOptions): Promise<
     if (exitCode !== 0) {
       const tail = stderr.trim().split('\n').slice(-3).join(' ') || `exit ${exitCode}`
       logger.debug({ args, exitCode, stderr: tail }, 'runtime CLI failed')
-      throw new RuntimeError(`container ${args.join(' ')}: ${tail}`, classifyError(stderr, exitCode))
+      throw new RuntimeError(
+        `container ${args.join(' ')}: ${tail}`,
+        classifyError(stderr, exitCode),
+      )
     }
 
     return { stdout, stderr }
