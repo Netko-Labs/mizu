@@ -1,6 +1,6 @@
 import type { Service, ServiceSourceType, ServiceStatus } from '@mizu/nagare-domain'
 import {
-  IconBrandDocker,
+  IconBox,
   IconBrandGit,
   IconBrandGolang,
   IconBrandNodejs,
@@ -55,7 +55,7 @@ const statusConfig: Record<ServiceStatus, { label: string; color: string; dot: s
 function SourceTypeIcon({ type }: { type: ServiceSourceType }) {
   switch (type) {
     case 'image':
-      return <IconBrandDocker className="size-3.5" />
+      return <IconBox className="size-3.5" />
     case 'git':
       return <IconBrandGit className="size-3.5" />
     case 'template':

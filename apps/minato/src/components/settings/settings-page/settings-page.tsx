@@ -1,4 +1,4 @@
-import { IconBrandDocker, IconDatabase, IconServer } from '@tabler/icons-react'
+import { IconBox, IconDatabase, IconServer } from '@tabler/icons-react'
 import { motion } from 'motion/react'
 import {
   ConfigLine,
@@ -145,10 +145,10 @@ export function SettingsPage() {
           <TerminalCard title="services.d/" delay={0.35}>
             <div className="space-y-2">
               <SettingsItem
-                icon={IconBrandDocker}
-                label="docker"
+                icon={IconBox}
+                label="runtime"
                 description="container runtime"
-                status={stats?.mizu.dockerAvailable ? 'active' : 'inactive'}
+                status={stats?.mizu.runtimeAvailable ? 'active' : 'inactive'}
               />
               <SettingsItem
                 icon={IconDatabase}
@@ -202,9 +202,9 @@ export function SettingsPage() {
                 mizu <span className="text-neutral-500">v0.1.0-alpha</span>
               </span>
               <span>
-                docker{' '}
+                runtime{' '}
                 <span className="text-neutral-500">
-                  {stats?.mizu.dockerAvailable ? stats.mizu.dockerInfo?.version : 'n/a'}
+                  {stats?.mizu.runtimeAvailable ? stats.mizu.runtimeInfo?.version : 'n/a'}
                 </span>
               </span>
             </div>

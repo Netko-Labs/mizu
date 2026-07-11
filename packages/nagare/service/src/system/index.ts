@@ -116,17 +116,17 @@ export function getCpuStats(): {
 export async function getMizuStatus(): Promise<{
   mizuHome: string
   mizuHomeExists: boolean
-  dockerAvailable: boolean
-  dockerInfo: Awaited<ReturnType<typeof getRuntimeInfo>> | null
+  runtimeAvailable: boolean
+  runtimeInfo: Awaited<ReturnType<typeof getRuntimeInfo>> | null
 }> {
   const mizuHome = getMizuHome()
   const mizuHomeExists = await exists(mizuHome)
-  const dockerAvailable = await isRuntimeAvailable()
+  const runtimeAvailable = await isRuntimeAvailable()
 
-  let dockerInfo = null
-  if (dockerAvailable) {
+  let runtimeInfo = null
+  if (runtimeAvailable) {
     try {
-      dockerInfo = await getRuntimeInfo()
+      runtimeInfo = await getRuntimeInfo()
     } catch {
       // Docker info fetch failed, but Docker is available
     }
@@ -135,8 +135,8 @@ export async function getMizuStatus(): Promise<{
   return {
     mizuHome,
     mizuHomeExists,
-    dockerAvailable,
-    dockerInfo,
+    runtimeAvailable,
+    runtimeInfo,
   }
 }
 

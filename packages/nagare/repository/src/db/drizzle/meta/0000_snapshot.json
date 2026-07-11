@@ -1,5 +1,5 @@
 {
-  "id": "1048118f-6290-419d-8013-5116dc2257f5",
+  "id": "f6f31435-10d5-41ec-9292-30521b6ed8fa",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -445,13 +445,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "driver": {
-          "name": "driver",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'bridge'"
-        },
         "subnet": {
           "name": "subnet",
           "type": "text",
@@ -471,8 +464,8 @@
           "notNull": true,
           "default": false
         },
-        "docker_network_id": {
-          "name": "docker_network_id",
+        "network_id": {
+          "name": "network_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -582,8 +575,8 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
-        "docker_network_id": {
-          "name": "docker_network_id",
+        "network_id": {
+          "name": "network_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1160,8 +1153,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "docker_volume_name": {
-          "name": "docker_volume_name",
+        "volume_name": {
+          "name": "volume_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false

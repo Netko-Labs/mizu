@@ -1,4 +1,4 @@
-import type { Network, NetworkDriver } from '@mizu/nagare-domain'
+import type { Network } from '@mizu/nagare-domain'
 import { IconNetwork, IconTrash } from '@tabler/icons-react'
 import { type Node, type NodeProps, Position } from '@xyflow/react'
 import { useState } from 'react'
@@ -22,19 +22,9 @@ export interface NetworkNodeData {
 
 export type NetworkNodeType = Node<NetworkNodeData, 'network'>
 
-const driverLabels: Record<NetworkDriver, string> = {
-  bridge: 'Bridge',
-  host: 'Host',
-  overlay: 'Overlay',
-  macvlan: 'Macvlan',
-  none: 'None',
-}
-
 export function NetworkNode({ data, selected }: NodeProps<NetworkNodeType>) {
   const [isHovered, setIsHovered] = useState(false)
   const { network, onDelete } = data
-
-  const driver = network.driver as NetworkDriver
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: React Flow nodes require mouse events
@@ -65,9 +55,6 @@ export function NetworkNode({ data, selected }: NodeProps<NetworkNodeType>) {
           )}
 
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-500/30">
-              {driverLabels[driver]}
-            </Badge>
             {network.internal && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 Internal

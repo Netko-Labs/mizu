@@ -1,5 +1,5 @@
 import {
-  IconBrandDocker,
+  IconBox,
   IconBrandGit,
   IconCheck,
   IconCopy,
@@ -139,7 +139,7 @@ export function SourceTypeIcon({ type }: SourceTypeIconProps) {
   const cls = 'size-3 text-neutral-500'
   switch (type) {
     case 'image':
-      return <IconBrandDocker className={cls} />
+      return <IconBox className={cls} />
     case 'git':
       return <IconBrandGit className={cls} />
     case 'template':

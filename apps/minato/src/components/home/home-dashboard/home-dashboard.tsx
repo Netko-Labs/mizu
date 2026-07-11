@@ -1,11 +1,4 @@
-import {
-  IconBrandDocker,
-  IconCpu,
-  IconFolder,
-  IconPhoto,
-  IconPlus,
-  IconServer,
-} from '@tabler/icons-react'
+import { IconBox, IconCpu, IconFolder, IconPhoto, IconPlus, IconServer } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { CreateProjectDialog } from '@/components/projects/create-project-dialog'
@@ -132,13 +125,13 @@ export function HomeDashboard() {
                 </div>
               </TerminalCard>
 
-              <TerminalCard title="docker.status" delay={0.25}>
+              <TerminalCard title="runtime.status" delay={0.25}>
                 <div className="flex items-center gap-3">
-                  <IconBrandDocker className="h-8 w-8 text-neutral-700" strokeWidth={1.5} />
+                  <IconBox className="h-8 w-8 text-neutral-700" strokeWidth={1.5} />
                   <div>
                     <div className="text-2xl font-bold text-white">
-                      {stats?.mizu.dockerAvailable
-                        ? stats.mizu.dockerInfo?.containersRunning
+                      {stats?.mizu.runtimeAvailable
+                        ? stats.mizu.runtimeInfo?.containersRunning
                         : '\u2014'}
                     </div>
                     <div className="text-[10px] text-neutral-600">running</div>
@@ -147,12 +140,12 @@ export function HomeDashboard() {
                 <div className="mt-3 space-y-0.5">
                   <StatLine
                     label="status"
-                    value={stats?.mizu.dockerAvailable ? 'online' : 'offline'}
-                    accent={stats?.mizu.dockerAvailable}
+                    value={stats?.mizu.runtimeAvailable ? 'online' : 'offline'}
+                    accent={stats?.mizu.runtimeAvailable}
                   />
                   <StatLine
                     label="version"
-                    value={stats?.mizu.dockerAvailable ? stats.mizu.dockerInfo?.version : 'n/a'}
+                    value={stats?.mizu.runtimeAvailable ? stats.mizu.runtimeInfo?.version : 'n/a'}
                   />
                 </div>
               </TerminalCard>
@@ -204,15 +197,15 @@ export function HomeDashboard() {
             <div className="grid flex-1 gap-4 sm:grid-cols-2">
               <TerminalCard title="containers" delay={0.4}>
                 <div className="flex items-center gap-3">
-                  <IconBrandDocker className="h-6 w-6 text-neutral-700" />
+                  <IconBox className="h-6 w-6 text-neutral-700" />
                   <div>
                     <div className="text-3xl font-bold text-white">
-                      {stats?.mizu.dockerAvailable
-                        ? (stats.mizu.dockerInfo?.containersRunning ?? 0)
+                      {stats?.mizu.runtimeAvailable
+                        ? (stats.mizu.runtimeInfo?.containersRunning ?? 0)
                         : '\u2014'}
                     </div>
                     <div className="text-[10px] text-neutral-600">
-                      / {stats?.mizu.dockerInfo?.containers ?? 0} total
+                      / {stats?.mizu.runtimeInfo?.containers ?? 0} total
                     </div>
                   </div>
                 </div>
@@ -223,8 +216,8 @@ export function HomeDashboard() {
                   <IconPhoto className="h-6 w-6 text-neutral-700" />
                   <div>
                     <div className="text-3xl font-bold text-white">
-                      {stats?.mizu.dockerAvailable
-                        ? (stats.mizu.dockerInfo?.images ?? 0)
+                      {stats?.mizu.runtimeAvailable
+                        ? (stats.mizu.runtimeInfo?.images ?? 0)
                         : '\u2014'}
                     </div>
                     <div className="text-[10px] text-neutral-600">available</div>

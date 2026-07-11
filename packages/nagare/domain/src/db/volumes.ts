@@ -25,7 +25,7 @@ export const volumeTable = pgTable(
       .notNull()
       .references(() => projectTable.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    dockerVolumeName: text('docker_volume_name'),
+    volumeName: text('volume_name'),
     path: text('path'),
     sizeBytes: bigint('size_bytes', { mode: 'bigint' }),
     createdAt: timestamp('created_at').defaultNow().notNull(),

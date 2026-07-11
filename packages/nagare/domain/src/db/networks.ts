@@ -14,9 +14,6 @@ import { projectTable } from './projects'
  *     ~^~^~^~^~
  */
 
-export const networkDriverEnum = ['bridge', 'host', 'overlay', 'macvlan', 'none'] as const
-export type NetworkDriver = (typeof networkDriverEnum)[number]
-
 export const networkTable = pgTable(
   'network',
   {
@@ -27,11 +24,10 @@ export const networkTable = pgTable(
       .notNull()
       .references(() => projectTable.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
-    driver: text('driver', { enum: networkDriverEnum }).default('bridge').notNull(),
     subnet: text('subnet'),
     gateway: text('gateway'),
     internal: boolean('internal').default(false).notNull(),
-    dockerNetworkId: text('docker_network_id'),
+    networkId: text('network_id'),
     canvasPosition: jsonb('canvas_position').default({ x: 0, y: 0 }).notNull(),
     createdAt: timestamp('created_at')
       .$defaultFn(() => new Date())

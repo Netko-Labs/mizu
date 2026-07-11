@@ -12,8 +12,8 @@ import { authPlugin } from '../setup'
 
 export const systemRoutes = new Elysia({ name: 'system', prefix: '/system' })
   .use(authPlugin)
-  // 🐳 docker daemon details
-  .get('/docker-info', { auth: true }, () => getRuntimeInfo())
+  // 📦 container runtime details
+  .get('/runtime', { auth: true }, () => getRuntimeInfo())
   // 🖥 host system info
   .get('/info', { auth: true }, () => getSystemInfo())
   // 🧠 memory stats

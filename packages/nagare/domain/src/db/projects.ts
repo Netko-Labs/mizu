@@ -27,7 +27,7 @@ export const projectTable = pgTable(
     slug: text('slug').notNull(),
     description: text('description'),
     settings: jsonb('settings').default({}).notNull(),
-    dockerNetworkId: text('docker_network_id'),
+    networkId: text('network_id'),
     createdAt: timestamp('created_at')
       .$defaultFn(() => new Date())
       .notNull(),

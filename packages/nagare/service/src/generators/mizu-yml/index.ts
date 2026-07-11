@@ -63,7 +63,7 @@ export async function generateMizuYml(
     manifest.databases.map((database) => [database.id, database.name]),
   )
   const volumeNameById = new Map(
-    manifest.volumes.map((volume) => [volume.id, volume.dockerVolumeName || volume.name]),
+    manifest.volumes.map((volume) => [volume.id, volume.volumeName || volume.name]),
   )
 
   const mizuFile: MizuYml = {

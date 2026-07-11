@@ -1,6 +1,6 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import type { z } from 'zod'
-import { type NetworkDriver, networkTable } from '../db'
+import { networkTable } from '../db'
 import type { CanvasPosition } from './services'
 
 /**
@@ -20,7 +20,6 @@ export type Network = z.infer<typeof NetworkSchema>
 export interface NetworkNodeData {
   id: string
   name: string
-  driver: NetworkDriver
   subnet?: string
   gateway?: string
   internal: boolean

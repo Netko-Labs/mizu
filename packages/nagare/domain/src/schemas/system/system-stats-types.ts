@@ -4,11 +4,8 @@
  * objects as `{}` under Elysia 2, so the api layer casts against these).
  */
 
-export interface DockerInfo {
+export interface RuntimeInfo {
   version: string
-  apiVersion: string
-  os: string
-  arch: string
   containers: number
   containersRunning: number
   images: number
@@ -40,8 +37,8 @@ export interface CpuStats {
 export interface MizuStatus {
   mizuHome: string
   mizuHomeExists: boolean
-  dockerAvailable: boolean
-  dockerInfo: DockerInfo | null
+  runtimeAvailable: boolean
+  runtimeInfo: RuntimeInfo | null
 }
 
 export interface DashboardStats {

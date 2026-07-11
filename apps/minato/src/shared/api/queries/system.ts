@@ -1,10 +1,10 @@
 import type {
   CpuStats,
   DashboardStats,
-  DockerInfo,
   InitializeResult,
   MemoryStats,
   MizuStatus,
+  RuntimeInfo,
   SystemInfo,
 } from '@mizu/nagare-domain'
 import { queryOptions } from '@tanstack/react-query'
@@ -17,7 +17,7 @@ import { unwrap } from '../utils'
 export const systemKeys = {
   all: ['system'] as const,
   dashboardStats: () => ['system', 'dashboard-stats'] as const,
-  dockerInfo: () => ['system', 'docker-info'] as const,
+  runtimeInfo: () => ['system', 'runtime'] as const,
   info: () => ['system', 'info'] as const,
   memory: () => ['system', 'memory'] as const,
   cpu: () => ['system', 'cpu'] as const,
@@ -32,11 +32,10 @@ export const systemQueries = {
       queryFn: async () =>
         (await unwrap(nagare.system['dashboard-stats'].get())) as unknown as DashboardStats,
     }),
-  dockerInfo: () =>
+  runtimeInfo: () =>
     queryOptions({
-      queryKey: systemKeys.dockerInfo(),
-      queryFn: async () =>
-        (await unwrap(nagare.system['docker-info'].get())) as unknown as DockerInfo,
+      queryKey: systemKeys.runtimeInfo(),
+      queryFn: async () => (await unwrap(nagare.system.runtime.get())) as unknown as RuntimeInfo,
     }),
   info: () =>
     queryOptions({

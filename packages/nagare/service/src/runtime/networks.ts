@@ -64,7 +64,7 @@ export async function ensureProjectNetwork(
   const networkName = getProjectNetworkName(projectSlug)
 
   const [project] = await db
-    .select({ networkId: projectTable.dockerNetworkId })
+    .select({ networkId: projectTable.networkId })
     .from(projectTable)
     .where(eq(projectTable.id, projectId))
 
@@ -85,7 +85,7 @@ export async function ensureProjectNetwork(
 
   await db
     .update(projectTable)
-    .set({ dockerNetworkId: networkName })
+    .set({ networkId: networkName })
     .where(eq(projectTable.id, projectId))
 
   return networkName
