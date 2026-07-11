@@ -94,7 +94,10 @@ lives in **Backend Layering** in `@docs/conventions.md`. Mizu-stack specifics:
 - Minato (frontend + auth) dev: `bun run repo dev --app minato` (localhost:3000)
 - Nagare (daemon) dev: `bun run repo dev --app nagare` (localhost:3001)
 - Production build: `bun run repo build --app minato` / `--app nagare`
-- Docker up/down: `bun run repo docker:up --app minato` (shared Postgres; nagare profile reuses it)
+- Docker up/down: `bun run repo docker:up --app minato` (shared Postgres; nagare profile reuses
+  it). Runtime auto-detected: `docker compose` when Docker exists, else Apple `container`
+  (macOS 26+, infra only — canvas deploys still need the Docker API).
+- Dev box provisioning (fresh Apple Silicon Mac): `./scripts/setup-devbox.sh`
 - Repo typecheck: `bun run check-types` · lint: `bun run fmt-lint` (fix: `fmt-lint:fix`) · tests:
   `bun run test`
 - DB (per app): `bun run repo db:generate|db:migrate|db:push|db:seed --app minato|nagare`

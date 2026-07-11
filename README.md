@@ -106,7 +106,20 @@ client.
 
 ## Getting Started
 
-You'll need [Bun](https://bun.sh) and Docker (OrbStack or Docker Desktop work great on macOS).
+**Fresh Mac?** One script provisions everything — bun, Apple's native
+[`container`](https://github.com/apple/container) runtime (no Docker Desktop needed), the shared
+Postgres, env files with fresh secrets, and migrations:
+
+```bash
+./scripts/setup-devbox.sh
+```
+
+> Canvas deploys speak the Docker API, so they stay disabled until you install Docker/OrbStack —
+> the rest of the stack (web UI, auth, daemon, DB) runs fine on Apple containers alone.
+
+**Manual setup**: you'll need [Bun](https://bun.sh) and a container runtime — Docker
+(OrbStack/Docker Desktop) for the full experience, or Apple `container` (macOS 26+) for the dev
+stack; the repo CLI auto-detects whichever is installed.
 
 ```bash
 bun install
