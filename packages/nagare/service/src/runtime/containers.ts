@@ -171,12 +171,21 @@ export async function getContainerStatus(containerId: string): Promise<Container
 }
 
 /**
- * List all containers (running and stopped)
+ * List all containers (running and stopped).
+ * Falls back to running-only when `--all` trips the CLI's JSON decoder — an
+ * upstream bug where stopped-container records can lack networks[].address.
  */
 export async function listContainers(): Promise<ContainerStatus[]> {
-  const payloads = await runtimeCliJson<InspectPayload[]>(['ls', '--all', '--format', 'json'])
-  if (!Array.isArray(payloads)) return []
-  return payloads.map(statusFromPayload)
+  try {
+    const payloads = await runtimeCliJson<InspectPayload[]>(['ls', '--all', '--format', 'json'])
+    if (!Array.isArray(payloads)) return []
+    return payloads.map(statusFromPayload)
+  } catch (error) {
+    logger.warn({ error: String(error) }, 'ls --all failed — falling back to running containers')
+    const payloads = await runtimeCliJson<InspectPayload[]>(['ls', '--format', 'json'])
+    if (!Array.isArray(payloads)) return []
+    return payloads.map(statusFromPayload)
+  }
 }
 
 /**
