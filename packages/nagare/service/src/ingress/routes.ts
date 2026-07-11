@@ -10,7 +10,12 @@ import { instanceSettingTable, projectTable, serviceTable } from '@mizu/nagare-d
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import { listContainers, sanitizeName } from '../runtime'
-import { DEFAULT_BASE_DOMAIN, INGRESS_ADMIN_PORT, INGRESS_HTTP_PORT } from './constants'
+import {
+  DEFAULT_BASE_DOMAIN,
+  INGRESS_ADMIN_PORT,
+  INGRESS_CONTAINER,
+  INGRESS_HTTP_PORT,
+} from './constants'
 import { getTailscaleIdentity } from './identity'
 import type { CaddyConfig, CaddyRoute } from './types'
 
@@ -76,6 +81,23 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
     })
   }
 
+  // System routes: the mizu UI + nagare API on the HOST, reached from the
+  // caddy container via its network gateway. Hostnames `mizu.` / `nagare.`
+  // are reserved for the platform itself.
+  const gateway = containers.find((c) => c.id === INGRESS_CONTAINER)?.ipv4Gateway
+  if (gateway) {
+    routes.push(
+      {
+        match: [{ host: [`mizu.${baseDomain}`] }],
+        handle: [{ handler: 'reverse_proxy', upstreams: [{ dial: `${gateway}:3000` }] }],
+      },
+      {
+        match: [{ host: [`nagare.${baseDomain}`] }],
+        handle: [{ handler: 'reverse_proxy', upstreams: [{ dial: `${gateway}:3001` }] }],
+      },
+    )
+  }
+
   // Fallback for unmatched hosts (raw IP, unknown names): a landing page
   // listing every routed app — never a blank white screen.
   const appList = routes
@@ -95,7 +117,8 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
         headers: { 'content-type': ['text/html; charset=utf-8'] },
         body: `<!doctype html><html><head><title>mizu ingress</title><style>body{background:#000;color:#a3a3a3;font-family:ui-monospace,monospace;padding:3rem}code{color:#60a5fa}h1{color:#fff;font-size:1.2rem}li{margin:.3rem 0}</style></head><body>
       <h1>水 mizu ingress</h1>
-      <p>this is the mizu reverse proxy — apps are served by hostname:</p>
+      <p>mizu ui: <code>http${baseDomain === 'localhost' ? '' : 's'}://mizu.${baseDomain}</code></p>
+      <p>apps are served by hostname:</p>
       <ul>
 ${appList || '        <li>no apps deployed yet</li>'}
       </ul>

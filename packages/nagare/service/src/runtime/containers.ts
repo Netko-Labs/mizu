@@ -144,7 +144,7 @@ export function mapContainerState(state: string | undefined): ContainerState {
 /** Extract a ContainerStatus from an inspect/ls payload */
 export function statusFromPayload(payload: InspectPayload): ContainerStatus {
   const id = payload.configuration?.id ?? ''
-  const rawAddress = payload.status?.networks?.[0]?.ipv4Address
+  const network = payload.status?.networks?.[0]
   const state = mapContainerState(payload.status?.state)
   return {
     id,
@@ -152,7 +152,8 @@ export function statusFromPayload(payload: InspectPayload): ContainerStatus {
     state,
     running: state === 'running',
     startedAt: payload.status?.startedDate ?? null,
-    ipv4Address: rawAddress ? (rawAddress.split('/')[0] ?? null) : null,
+    ipv4Address: network?.ipv4Address ? (network.ipv4Address.split('/')[0] ?? null) : null,
+    ipv4Gateway: network?.ipv4Gateway ? (network.ipv4Gateway.split('/')[0] ?? null) : null,
   }
 }
 

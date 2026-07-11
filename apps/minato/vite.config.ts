@@ -7,6 +7,10 @@ import tsConfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
   server: {
     port: 3000,
+    // The dev box serves the UI through the mizu ingress (caddy) — accept
+    // proxied Host headers and bind beyond loopback.
+    host: true,
+    allowedHosts: true,
   },
   plugins: [
     tsConfigPaths({

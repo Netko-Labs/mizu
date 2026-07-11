@@ -92,6 +92,8 @@ export interface ContainerStatus {
   startedAt: string | null
   /** Primary IPv4 address on its network (no CIDR suffix), when running */
   ipv4Address: string | null
+  /** Gateway of its primary network — the HOST's address from inside */
+  ipv4Gateway: string | null
 }
 
 /**
