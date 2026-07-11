@@ -12,7 +12,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
-import { type ServicePropertiesProps, serviceStatusColors } from './lib'
+import { type ServicePropertiesProps, serviceStatusColors, useIngressUrl } from './lib'
 import {
   ActionButton,
   EditablePropertyLine,
@@ -21,11 +21,21 @@ import {
   SourceTypeIcon,
 } from './property-primitives'
 
-export function ServiceProperties({ service, onAction, isActionPending }: ServicePropertiesProps) {
+export function ServiceProperties({
+  service,
+  projectSlug,
+  onAction,
+  isActionPending,
+}: ServicePropertiesProps) {
   const status = service.status as ServiceStatus
   const sourceType = service.sourceType as ServiceSourceType
   const sourceConfig = service.sourceConfig as Record<string, unknown>
   const ports = (service.ports ?? []) as PortMapping[]
+  const ingressUrl = useIngressUrl(
+    service.name,
+    projectSlug,
+    service.status === 'running' && ports.length > 0,
+  )
   const volumes = (service.volumeMounts ?? []) as VolumeMount[]
 
   const getSourceInfo = (): string => {
@@ -134,6 +144,21 @@ export function ServiceProperties({ service, onAction, isActionPending }: Servic
           </div>
         )}
       </div>
+
+      {/* Ingress */}
+      {ingressUrl && (
+        <div>
+          <SectionHeader title="ingress" />
+          <a
+            href={ingressUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block truncate rounded border border-blue-500/20 bg-blue-500/5 px-2 py-1 font-mono text-[11px] text-blue-400 transition-colors hover:border-blue-500/40 hover:text-blue-300"
+          >
+            {ingressUrl}
+          </a>
+        </div>
+      )}
 
       {/* Volumes */}
       <div>

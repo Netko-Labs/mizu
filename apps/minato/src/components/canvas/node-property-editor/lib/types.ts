@@ -17,6 +17,7 @@ export type PropertyAction =
 
 export interface NodePropertyEditorProps {
   nodeId: string
+  projectSlug: string
   service: Serialized<Service> | null
   database: Serialized<Database> | null
   nodeType: 'service' | 'database' | null
@@ -27,6 +28,7 @@ export interface NodePropertyEditorProps {
 
 export interface ServicePropertiesProps {
   service: Serialized<Service>
+  projectSlug: string
   onAction?: (action: PropertyAction) => void
   isActionPending?: boolean
 }

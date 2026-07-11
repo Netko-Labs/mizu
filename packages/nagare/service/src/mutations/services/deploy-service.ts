@@ -2,6 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { type ImageSourceConfig, projectTable, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { syncIngressSafe } from '../../ingress'
 import {
   createContainer,
   ensureProjectNetwork,
@@ -139,6 +140,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
       .where(eq(serviceTable.id, serviceId))
 
     logger.info({ serviceId, containerId, containerName }, 'Service deployed successfully')
+    syncIngressSafe()
     return { success: true, containerId }
   } catch (error) {
     await db.update(serviceTable).set({ status: 'error' }).where(eq(serviceTable.id, serviceId))

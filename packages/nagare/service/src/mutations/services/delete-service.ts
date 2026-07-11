@@ -2,6 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { type Service, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { syncIngressSafe } from '../../ingress'
 import { removeContainer, stopContainer } from '../../runtime'
 
 const logger = createLogger('service:delete-service')
@@ -35,5 +36,6 @@ export const deleteService = async (serviceId: string): Promise<Service | undefi
 
   const [result] = await db.delete(serviceTable).where(eq(serviceTable.id, serviceId)).returning()
   logger.info({ serviceId }, 'Service deleted')
+  syncIngressSafe()
   return result as Service | undefined
 }

@@ -2,6 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { syncIngressSafe } from '../../ingress'
 import { restartContainer, startContainer, stopContainer } from '../../runtime'
 
 const logger = createLogger('service:control-service')
@@ -28,6 +29,7 @@ export const startService = async (serviceId: string): Promise<void> => {
     await db.update(serviceTable).set({ status: 'running' }).where(eq(serviceTable.id, serviceId))
 
     logger.info({ serviceId, containerId: service.containerId }, 'Service started')
+    syncIngressSafe()
   } catch (error) {
     await db.update(serviceTable).set({ status: 'error' }).where(eq(serviceTable.id, serviceId))
 
@@ -59,6 +61,7 @@ export const stopService = async (serviceId: string): Promise<void> => {
     await db.update(serviceTable).set({ status: 'stopped' }).where(eq(serviceTable.id, serviceId))
 
     logger.info({ serviceId, containerId: service.containerId }, 'Service stopped')
+    syncIngressSafe()
   } catch (error) {
     await db.update(serviceTable).set({ status: 'error' }).where(eq(serviceTable.id, serviceId))
 
@@ -90,6 +93,7 @@ export const restartService = async (serviceId: string): Promise<void> => {
     await db.update(serviceTable).set({ status: 'running' }).where(eq(serviceTable.id, serviceId))
 
     logger.info({ serviceId, containerId: service.containerId }, 'Service restarted')
+    syncIngressSafe()
   } catch (error) {
     await db.update(serviceTable).set({ status: 'error' }).where(eq(serviceTable.id, serviceId))
 

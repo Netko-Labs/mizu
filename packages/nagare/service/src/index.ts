@@ -1,6 +1,7 @@
 export * from './auth'
 export * from './filesystem'
 export * from './generators'
+export * from './ingress'
 export * from './logs'
 export * from './mutations'
 export * from './queries'

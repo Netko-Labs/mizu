@@ -5,6 +5,7 @@ import type { NodePropertyEditorProps } from './lib'
 import { ServiceProperties } from './service-properties'
 
 export function NodePropertyEditor({
+  projectSlug,
   service,
   database,
   nodeType,
@@ -44,6 +45,7 @@ export function NodePropertyEditor({
           {service && (
             <ServiceProperties
               service={service}
+              projectSlug={projectSlug}
               onAction={onAction}
               isActionPending={isActionPending}
             />

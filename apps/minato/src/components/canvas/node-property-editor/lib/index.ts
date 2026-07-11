@@ -1,4 +1,5 @@
 export * from './hooks/use-editable-property'
+export * from './hooks/use-ingress-url'
 export * from './types'
 export * from './utils'
 export * from './values'

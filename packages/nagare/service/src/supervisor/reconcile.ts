@@ -8,6 +8,7 @@ import { createLogger } from '@mizu/logger'
 import { databaseTable, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq, isNotNull } from 'drizzle-orm'
+import { syncIngress } from '../ingress'
 import { deployDatabase } from '../mutations/databases/deploy-database'
 import { deployService } from '../mutations/services/deploy-service'
 import { type ContainerState, listContainers, startContainer, stopContainer } from '../runtime'
@@ -185,4 +186,9 @@ export async function reconcileOnce(state: SupervisorState): Promise<void> {
       logger.error({ entity: entity.id, error: String(error) }, 'Reconcile action failed')
     }
   }
+
+  // Ingress rides the same loop: routes follow status, caddy crashes heal here
+  await syncIngress().catch((error) => {
+    logger.warn({ error: String(error) }, 'Ingress sync failed during reconcile')
+  })
 }

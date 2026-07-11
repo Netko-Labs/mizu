@@ -144,6 +144,7 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
           >
             <NodePropertyEditor
               nodeId={selectedNodeId}
+              projectSlug={project?.slug ?? ''}
               service={selectedService}
               database={selectedDatabase}
               nodeType={actionableSelectedNodeType}
