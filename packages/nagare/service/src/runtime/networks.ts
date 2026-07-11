@@ -74,7 +74,7 @@ export async function ensureProjectNetwork(
 
   if (!(await networkExists(networkName))) {
     try {
-      await runtimeCli(['network', 'create', '-l', `${MIZU_LABELS.managed}=true`, networkName])
+      await runtimeCli(['network', 'create', '--label', `${MIZU_LABELS.managed}=true`, networkName])
       logger.info({ projectId, networkName }, 'Created project network')
     } catch (error) {
       if (!(error instanceof RuntimeError && error.code === 'ALREADY_EXISTS')) {

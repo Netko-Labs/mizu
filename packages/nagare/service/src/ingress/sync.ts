@@ -30,7 +30,19 @@ async function putConfig(body: string): Promise<void> {
  * the admin API when the desired config actually changed (or force = true,
  * used right after the ingress container is created/recreated).
  */
-export async function syncIngress(force = false): Promise<void> {
+let inFlight: Promise<void> | null = null
+
+export function syncIngress(force = false): Promise<void> {
+  // Serialize passes: deploy hooks and the supervisor can fire concurrently,
+  // and two ensureIngress() racing a recreate trips ALREADY_EXISTS.
+  const next = (inFlight ?? Promise.resolve()).then(() => doSync(force))
+  inFlight = next.finally(() => {
+    if (inFlight === next) inFlight = null
+  })
+  return next
+}
+
+async function doSync(force: boolean): Promise<void> {
   const config = await buildIngressConfig()
   const body = JSON.stringify(config)
   const hash = Bun.hash(body).toString(16)
