@@ -56,6 +56,26 @@ export function StatLine({
   )
 }
 
+export function LeaderLine({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string
+  value: string | number | undefined
+  accent?: boolean
+}) {
+  return (
+    <div className="flex items-baseline gap-2 text-xs">
+      <span className="shrink-0 text-neutral-600">{label}</span>
+      <span aria-hidden className="min-w-4 flex-1 border-b border-dotted border-neutral-800" />
+      <span className={cn('truncate', accent ? 'text-blue-400' : 'text-neutral-400')}>
+        {value ?? '—'}
+      </span>
+    </div>
+  )
+}
+
 export function ConfigLine({
   label,
   value,

@@ -11,7 +11,7 @@ export function ProjectItem({ name, slug, description, delay = 0 }: ProjectItemP
       transition={{ duration: 0.3, delay }}
     >
       <Link to="/projects/$slug" params={{ slug }}>
-        <div className="group rounded-lg border border-neutral-800 bg-neutral-950 p-3 transition-all hover:border-neutral-700 hover:bg-neutral-900">
+        <div className="group rounded-lg border border-neutral-800 bg-neutral-950 p-4 transition-all hover:border-neutral-700 hover:bg-neutral-900">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-black">
               <IconFolder className="h-4 w-4 text-neutral-500" />

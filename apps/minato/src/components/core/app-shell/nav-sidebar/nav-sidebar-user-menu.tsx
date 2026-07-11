@@ -1,6 +1,5 @@
 import { IconChevronDown, IconLogout, IconSettings, IconUser } from '@tabler/icons-react'
 import { useNavigate } from '@tanstack/react-router'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,30 +18,21 @@ export function UserMenu() {
   const collapsed = state === 'collapsed'
 
   const user = session?.user
-  const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : user?.email?.slice(0, 2).toUpperCase() || '?'
+  const initial = (user?.name?.[0] || user?.email?.[0] || '?').toUpperCase()
 
   if (isPending) {
     return (
       <div
         className={cn(
           'flex items-center font-mono',
-          collapsed
-            ? 'justify-center p-1'
-            : 'gap-3 rounded-lg border border-neutral-800 bg-black p-2',
+          collapsed ? 'justify-center p-1' : 'gap-2 rounded-md px-2 py-1',
         )}
       >
-        <div className="size-8 animate-pulse rounded-lg bg-neutral-800" />
+        <div className="size-6 animate-pulse rounded-md bg-neutral-800" />
         {!collapsed && (
           <div className="flex-1 space-y-1">
-            <div className="h-3 w-16 animate-pulse rounded bg-neutral-800" />
-            <div className="h-2 w-12 animate-pulse rounded bg-neutral-800" />
+            <div className="h-2.5 w-16 animate-pulse rounded bg-neutral-800" />
+            <div className="h-2 w-24 animate-pulse rounded bg-neutral-800" />
           </div>
         )}
       </div>
@@ -53,25 +43,25 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'flex w-full items-center font-mono outline-none transition-all duration-200',
+          'flex w-full items-center font-mono outline-none transition-colors',
+          'focus-visible:ring-2 focus-visible:ring-blue-500/40',
           collapsed
             ? 'justify-center rounded-md p-1 hover:bg-neutral-900'
-            : 'gap-3 rounded-lg border border-neutral-800 bg-black p-2 hover:border-neutral-700 hover:bg-neutral-950',
+            : 'gap-2 rounded-md px-2 py-1 hover:bg-neutral-950 data-[state=open]:bg-neutral-950',
         )}
       >
-        <Avatar size="default" className="shrink-0 rounded-lg ring-1 ring-neutral-800">
-          <AvatarImage src={user?.image || undefined} alt={user?.name || 'User'} />
-          <AvatarFallback className="rounded-lg bg-neutral-800 font-mono text-[10px] text-neutral-400">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex size-6 shrink-0 items-center justify-center rounded-md border border-neutral-800 bg-neutral-900 text-[10px] text-neutral-400">
+          {initial}
+        </div>
         {!collapsed && (
           <>
             <div className="flex min-w-0 flex-1 flex-col items-start text-left">
-              <span className="w-full truncate text-xs text-neutral-300">
+              <span className="w-full truncate text-[11px] leading-4 text-neutral-300">
                 {user?.name || 'user'}
               </span>
-              <span className="w-full truncate text-[10px] text-neutral-600">@local</span>
+              <span className="w-full truncate text-[10px] leading-4 text-neutral-600">
+                {user?.email || '@local'}
+              </span>
             </div>
             <IconChevronDown className="size-3 shrink-0 text-neutral-600" />
           </>

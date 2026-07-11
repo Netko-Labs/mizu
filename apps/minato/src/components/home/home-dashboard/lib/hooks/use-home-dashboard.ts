@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useWorkspace } from '@/components/core/workspace'
 import { useSession } from '@/integrations/auth/client'
 import { initializeMizu, projectQueries, systemQueries } from '@/shared/api'
+import { buildHostBand, buildMeterTiles, buildRuntimeLines } from '../utils'
 
 export function useHomeDashboard() {
   const { data: session } = useSession()
@@ -29,12 +30,15 @@ export function useHomeDashboard() {
   const firstName = session?.user?.name?.split(' ')[0] || 'user'
 
   return {
-    stats,
     isLoading,
     firstName,
     recentProjects,
     isProjectsLoading,
     isWorkspaceLoading,
     hasWorkspace: Boolean(currentWorkspace),
+    host: stats ? buildHostBand(stats) : null,
+    tiles: stats ? buildMeterTiles(stats) : [],
+    tailnet: stats?.mizu.tailscale ?? null,
+    runtimeLines: stats ? buildRuntimeLines(stats) : [],
   }
 }

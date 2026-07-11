@@ -60,7 +60,7 @@ export function HomeRecentProjects({ projects, isLoading, hasWorkspace }: HomeRe
               name={project.name}
               slug={project.slug}
               description={project.description}
-              delay={0.1 * index}
+              delay={Math.min(0.05 * index, 0.3)}
             />
           ))}
         </div>

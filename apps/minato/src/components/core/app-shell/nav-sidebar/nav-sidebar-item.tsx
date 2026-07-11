@@ -19,13 +19,13 @@ export function NavItem({ to, icon: Icon, title, cmd }: NavItemProps) {
           isActive={isActive}
           tooltip={title}
           className={cn(
-            'relative rounded-lg font-mono transition-all duration-200',
+            'relative h-8 rounded-md font-mono transition-colors duration-200',
+            'focus-visible:ring-2 focus-visible:ring-blue-500/40',
             isActive
               ? 'bg-neutral-950 text-white'
               : 'text-neutral-500 hover:bg-neutral-950 hover:text-neutral-300',
           )}
         >
-          {!collapsed && <span className="mr-1 text-neutral-700">$</span>}
           <Icon
             className={cn('size-4', isActive ? 'text-blue-500' : 'text-neutral-600')}
             strokeWidth={1.5}
@@ -35,7 +35,7 @@ export function NavItem({ to, icon: Icon, title, cmd }: NavItemProps) {
           {isActive && (
             <motion.div
               layoutId="nav-indicator"
-              className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-blue-500"
+              className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-blue-500"
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             />
           )}

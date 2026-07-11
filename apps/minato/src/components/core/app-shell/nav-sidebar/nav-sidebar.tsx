@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar'
 import { WorkspaceSwitcher } from '@/components/workspaces/workspace-switcher'
 import { cn } from '@/lib/utils'
-import { NAVIGATION_ITEMS } from './lib'
+import { FOOTER_NAVIGATION_ITEMS, NAVIGATION_ITEMS } from './lib'
 import { MizuBrand } from './nav-sidebar-brand'
 import { NavItem } from './nav-sidebar-item'
 import { UserMenu } from './nav-sidebar-user-menu'
@@ -29,11 +29,14 @@ function CommandPaletteButton() {
       <SidebarMenuButton
         onClick={open}
         tooltip="Command Palette (⌘K)"
-        className="rounded-lg font-mono text-xs text-neutral-500 transition-all hover:bg-neutral-950 hover:text-neutral-300"
+        className={cn(
+          'h-8 rounded-md font-mono text-xs text-neutral-500 transition-colors duration-200',
+          'hover:bg-neutral-950 hover:text-neutral-300',
+          'focus-visible:ring-2 focus-visible:ring-blue-500/40',
+        )}
       >
-        {!collapsed && <span className="mr-1 text-neutral-700">$</span>}
         <IconCommand className="size-4 text-neutral-600" strokeWidth={1.5} />
-        <span>cmd</span>
+        <span className="text-xs">cmd</span>
         {!collapsed && (
           <kbd className="ml-auto rounded border border-neutral-800 bg-black px-1 py-0.5 text-[10px] text-neutral-600">
             ⌘K
@@ -54,43 +57,37 @@ export function NavSidebar() {
       variant="sidebar"
       className="border-r border-neutral-800 bg-black font-mono"
     >
-      <SidebarHeader className={cn('relative', collapsed ? 'px-2 py-3' : 'px-4 py-4')}>
+      <SidebarHeader
+        className={cn(
+          'border-b border-neutral-800/60',
+          collapsed ? 'gap-1 px-1 py-2' : 'gap-0 p-0',
+        )}
+      >
         <MizuBrand collapsed={collapsed} />
+        <WorkspaceSwitcher collapsed={collapsed} />
       </SidebarHeader>
 
-      <div className={cn(collapsed ? 'px-1.5 pb-2' : 'px-3 pb-3')}>
-        <WorkspaceSwitcher collapsed={collapsed} />
-      </div>
-
-      {!collapsed && <div className="mx-3 h-px bg-neutral-800" />}
-
-      <SidebarContent className="relative">
-        <SidebarGroup className={cn(collapsed ? 'py-2' : 'py-3')}>
-          {!collapsed && <div className="mb-2 px-4 text-[10px] text-neutral-700"># quick</div>}
+      <SidebarContent>
+        <SidebarGroup className={cn('py-2', collapsed ? 'px-1' : 'px-2')}>
           <SidebarGroupContent>
-            <SidebarMenu className={cn('space-y-1', collapsed ? 'px-1' : 'px-2')}>
-              <CommandPaletteButton />
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {!collapsed && <div className="mx-3 h-px bg-neutral-800" />}
-
-        <SidebarGroup className={cn(collapsed ? 'py-2' : 'py-3')}>
-          {!collapsed && <div className="mb-2 px-4 text-[10px] text-neutral-700"># navigation</div>}
-          <SidebarGroupContent>
-            <SidebarMenu className={cn('space-y-1', collapsed ? 'px-1' : 'px-2')}>
+            <SidebarMenu className="gap-0.5">
               {NAVIGATION_ITEMS.map((item) => (
                 <NavItem key={item.to} {...item} />
               ))}
+              <CommandPaletteButton />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      {!collapsed && <div className="mx-3 h-px bg-neutral-800" />}
-
-      <SidebarFooter className={cn('relative', collapsed ? 'p-1.5' : 'p-3')}>
+      <SidebarFooter
+        className={cn('border-t border-neutral-800/60', collapsed ? 'gap-1 p-1' : 'gap-1 p-2')}
+      >
+        <SidebarMenu className="gap-0.5">
+          {FOOTER_NAVIGATION_ITEMS.map((item) => (
+            <NavItem key={item.to} {...item} />
+          ))}
+        </SidebarMenu>
         <UserMenu />
       </SidebarFooter>
     </Sidebar>

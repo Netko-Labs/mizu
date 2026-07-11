@@ -59,15 +59,13 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
       <div
         className={cn(
           'flex items-center font-mono',
-          collapsed
-            ? 'justify-center p-1'
-            : 'gap-2 rounded-lg border border-neutral-800 bg-black p-2',
+          collapsed ? 'justify-center p-1' : 'gap-1.5 px-3 pt-0.5 pb-2',
         )}
       >
         <div
-          className={cn('animate-pulse rounded bg-neutral-800', collapsed ? 'size-8' : 'size-6')}
+          className={cn('animate-pulse rounded bg-neutral-800', collapsed ? 'size-8' : 'size-3')}
         />
-        {!collapsed && <div className="h-4 w-20 animate-pulse rounded bg-neutral-800" />}
+        {!collapsed && <div className="h-3 w-20 animate-pulse rounded bg-neutral-800" />}
       </div>
     )
   }
@@ -82,17 +80,21 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
           onClick={openCreate}
           disabled={isCreating}
           className={cn(
-            'flex w-full items-center font-mono transition-all duration-200',
+            'flex w-full items-center font-mono outline-none transition-colors duration-200',
+            'focus-visible:ring-2 focus-visible:ring-blue-500/40',
             collapsed
               ? 'justify-center rounded-md p-1 hover:bg-neutral-900'
-              : 'gap-2 rounded-lg border border-neutral-800 bg-black px-2.5 py-2 text-xs text-neutral-500 hover:border-neutral-700 hover:text-neutral-300',
+              : 'gap-1 px-3 pt-0.5 pb-2 text-left text-[11px] text-neutral-500 hover:text-neutral-300',
           )}
         >
+          {!collapsed && <span className="text-neutral-700">~/</span>}
           <IconPlus
-            className={cn(collapsed ? 'size-5 text-neutral-600' : 'size-4 text-neutral-600')}
+            className={cn('shrink-0 text-neutral-600', collapsed ? 'size-5' : 'size-3')}
             strokeWidth={1.5}
           />
-          {!collapsed && <span>{isCreating ? 'creating...' : '+ workspace'}</span>}
+          {!collapsed && (
+            <span className="truncate">{isCreating ? 'creating...' : 'workspace'}</span>
+          )}
         </button>
         {createDialog}
       </>
@@ -106,29 +108,28 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            'flex w-full items-center font-mono outline-none transition-all duration-200',
+            'group/switcher flex w-full items-center font-mono outline-none transition-colors duration-200',
+            'focus-visible:ring-2 focus-visible:ring-blue-500/40',
             collapsed
               ? 'justify-center rounded-md p-1 hover:bg-neutral-900'
-              : 'gap-2 rounded-lg border border-neutral-800 bg-black px-2.5 py-2 hover:border-neutral-700 data-[state=open]:border-neutral-700',
+              : cn(
+                  'gap-1 px-3 pt-0.5 pb-2 text-left text-[11px] text-neutral-500',
+                  'hover:text-neutral-300 data-[state=open]:text-neutral-300',
+                ),
           )}
         >
-          <div
-            className={cn(
-              'flex shrink-0 items-center justify-center rounded font-medium text-blue-500',
-              collapsed
-                ? 'size-8 border border-neutral-800 bg-neutral-950 text-xs'
-                : 'size-6 border border-neutral-800 bg-neutral-950 text-[10px]',
-            )}
-          >
-            {currentWorkspace.name.slice(0, 1).toUpperCase()}
-          </div>
-
-          {!collapsed && (
+          {collapsed ? (
+            <div className="flex size-8 shrink-0 items-center justify-center rounded border border-neutral-800 bg-neutral-950 text-xs font-medium text-blue-500">
+              {currentWorkspace.name.slice(0, 1).toUpperCase()}
+            </div>
+          ) : (
             <>
-              <span className="flex-1 truncate text-left text-xs text-neutral-300">
-                {currentWorkspace.name}
-              </span>
-              <IconChevronDown className="size-3 shrink-0 text-neutral-600" />
+              <span className="text-neutral-700">~/</span>
+              <span className="truncate">{currentWorkspace.name}</span>
+              <IconChevronDown
+                className="size-3 shrink-0 text-neutral-700 transition-colors group-hover/switcher:text-neutral-400"
+                strokeWidth={1.5}
+              />
             </>
           )}
         </DropdownMenuTrigger>

@@ -4,5 +4,8 @@ import type { NavigationItem } from './types'
 export const NAVIGATION_ITEMS: NavigationItem[] = [
   { title: 'home', to: '/home', icon: IconHome, cmd: '~' },
   { title: 'projects', to: '/projects', icon: IconFolder, cmd: 'ls' },
+]
+
+export const FOOTER_NAVIGATION_ITEMS: NavigationItem[] = [
   { title: 'config', to: '/settings', icon: IconSettings, cmd: 'cfg' },
 ]

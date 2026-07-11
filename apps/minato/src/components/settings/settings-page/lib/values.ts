@@ -1,4 +1,4 @@
-import type { InstanceSettingsForm } from './types'
+import type { InstanceSettingsForm, SettingsTabDefinition } from './types'
 
 export const defaultForm: InstanceSettingsForm = {
   instanceName: 'mizu',
@@ -11,3 +11,9 @@ export const defaultForm: InstanceSettingsForm = {
   registrationEnabled: true,
   updatesCronExpression: '0 3 * * *',
 }
+
+export const SETTINGS_TABS: SettingsTabDefinition[] = [
+  { id: 'instance', label: 'instance' },
+  { id: 'ingress', label: 'ingress' },
+  { id: 'access', label: 'access' },
+]

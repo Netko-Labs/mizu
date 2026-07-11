@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   instanceSettingsKeys,
   instanceSettingsQueries,
@@ -7,7 +7,7 @@ import {
   upsertInstanceSettings,
 } from '@/shared/api'
 import type { InstanceSettingsForm, SettingsFeedback } from '../types'
-import { defaultForm } from '../values'
+import { isFormEqual, settingsToForm } from '../utils'
 
 export function useInstanceSettingsForm() {
   const queryClient = useQueryClient()
@@ -16,30 +16,20 @@ export function useInstanceSettingsForm() {
 
   const { data: stats } = useQuery(systemQueries.dashboardStats())
 
-  const [form, setForm] = useState<InstanceSettingsForm>(defaultForm)
+  const savedForm = useMemo(() => settingsToForm(settings), [settings])
+
+  const [form, setForm] = useState<InstanceSettingsForm>(savedForm)
   const [feedback, setFeedback] = useState<SettingsFeedback | null>(null)
 
   useEffect(() => {
-    if (settings) {
-      setForm({
-        instanceName: settings.instanceName ?? 'mizu',
-        domain: settings.domain ?? '',
-        dns: settings.dns ?? '',
-        timezone: settings.timezone ?? 'UTC',
-        publicIpv4: settings.publicIpv4 ?? '',
-        publicIpv6: settings.publicIpv6 ?? '',
-        doNotTrack: settings.doNotTrack ?? false,
-        registrationEnabled: settings.registrationEnabled ?? true,
-        updatesCronExpression: settings.updatesCronExpression ?? '0 3 * * *',
-      })
-    }
-  }, [settings])
+    setForm(savedForm)
+  }, [savedForm])
 
   const upsertMutation = useMutation({
     mutationFn: upsertInstanceSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instanceSettingsKeys.all })
-      setFeedback({ type: 'success', message: 'configuration saved successfully' })
+      setFeedback({ type: 'success', message: 'config saved' })
       setTimeout(() => setFeedback(null), 3000)
     },
     onError: (error) => {
@@ -73,6 +63,7 @@ export function useInstanceSettingsForm() {
     form,
     feedback,
     stats,
+    isDirty: !isFormEqual(form, savedForm),
     isLoadingSettings,
     isSaving: upsertMutation.isPending,
     updateField,

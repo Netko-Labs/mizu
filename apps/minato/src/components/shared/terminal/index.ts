@@ -1,6 +1,7 @@
 export {
   ConfigLine,
   EditableField,
+  LeaderLine,
   SettingsItem,
   StatLine,
   TerminalCard,
