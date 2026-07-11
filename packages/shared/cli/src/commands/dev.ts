@@ -2,7 +2,7 @@ import * as path from 'node:path'
 import { getAppDir, getAppKind, getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
 import { killProcessOnPort, loadEnvFile, run } from '../utils/shell'
 import { dbGenerate, dbMigrate } from './db'
-import { dockerUp } from './docker'
+import { infraUp } from './infra'
 
 /**
  * ✧･ﾟ: *✧･ﾟ:* DEV COMMAND *:･ﾟ✧*:･ﾟ✧
@@ -12,7 +12,7 @@ import { dockerUp } from './docker'
 
 /**
  * Run full development setup for an app:
- * 1. Start Docker containers
+ * 1. Start infra containers (Apple container runtime)
  * 2. Generate DB schema
  * 3. Run migrations
  * 4. Start dev server
@@ -34,8 +34,8 @@ export async function dev(args: string[]) {
 
   console.log(`🚀 Starting full development setup for ${appName}...\n`)
 
-  // Step 1: Start Docker containers
-  await dockerUp(args)
+  // Step 1: Start infra containers
+  await infraUp(args)
 
   // Step 2: Generate DB schema
   await dbGenerate(args)
@@ -48,7 +48,7 @@ export async function dev(args: string[]) {
 }
 
 /**
- * Run only the development server for an app (without docker/db setup).
+ * Run only the development server for an app (without infra/db setup).
  * Vite apps run `vite dev`; headless server apps run `bun --watch src/index.ts`.
  */
 export async function serve(args: string[]) {

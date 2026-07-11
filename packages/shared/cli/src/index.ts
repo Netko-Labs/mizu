@@ -14,12 +14,11 @@ import { clean } from './commands/clean'
 import { dbGenerate, dbMigrate, dbPush, dbSeed, dbStudio } from './commands/db'
 // Development commands
 import { dev, serve } from './commands/dev'
-// Docker commands
-import { dockerDown, dockerUp } from './commands/docker'
-
 // Generator commands
 import { generateApp, generateLib } from './commands/generate'
 import { info } from './commands/info'
+// Infra commands
+import { infraDown, infraUp } from './commands/infra'
 import { logs } from './commands/logs'
 // Project commands
 import { previewRename, renameProject } from './commands/rename'
@@ -40,9 +39,9 @@ const commands: Record<string, (args: string[]) => Promise<void>> = {
   serve: serve,
   build: build,
 
-  // Docker
-  'docker:up': dockerUp,
-  'docker:down': dockerDown,
+  // Infra
+  'infra:up': infraUp,
+  'infra:down': infraDown,
 
   // Database
   'db:migrate': dbMigrate,

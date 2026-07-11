@@ -14,9 +14,6 @@
 #   4. Starts the container system + the shared Postgres (port 19432)
 #   5. bun install, generates .env files with fresh secrets, runs DB migrations
 #
-# Note: mizu's canvas deploy engine speaks the Docker API (dockerode); Apple
-# `container` has no Docker-compatible socket, so deploys stay disabled until
-# Docker is installed. Everything else (web UI, auth, daemon, DB) works.
 
 set -euo pipefail
 
@@ -87,8 +84,8 @@ fi
 cd "$repo_dir"
 
 log "Installing workspace dependencies..."
-# `cpu-features` (optional native dep of ssh2, via dockerode) fails to build on
-# some CLT setups; bun drops it but exits 1. Everything else installs fine.
+# Optional native deps can fail to build on some CLT setups; bun drops them
+# but exits 1. Everything else installs fine.
 if ! bun install; then
   log "⚠ bun install reported a failure — retrying and tolerating optional native deps"
   bun install || log "⚠ continuing; an optional native package (e.g. cpu-features) was skipped"
@@ -120,12 +117,11 @@ ensure_env nagare
 # ── 6. Shared Postgres via the repo CLI (Apple runtime autodetected) ─────────
 
 log "Starting the shared Postgres..."
-bun run repo docker:up --app minato
+bun run repo infra:up --app minato
 
 log "Waiting for Postgres to accept connections..."
 for i in $(seq 1 60); do
-  if container exec mizu-db-minato pg_isready -U postgres >/dev/null 2>&1 ||
-    docker exec mizu-db-minato-1 pg_isready -U postgres >/dev/null 2>&1; then
+  if container exec mizu-db-minato pg_isready -U postgres >/dev/null 2>&1; then
     break
   fi
   [ "$i" = 60 ] && fail "Postgres did not become ready"
@@ -155,7 +151,6 @@ $(printf '\033[1;32m')✅ mizu dev box ready!$(printf '\033[0m')
   Postgres:  localhost:$DB_PORT (postgres/postgres, db: mizu)
   Data:      named container volume 'mizu-postgres-data'
 
-  ℹ Canvas deploys need the Docker API and stay disabled under Apple
-    container. Install Docker/OrbStack later to enable them — everything
-    else works today.
+  Deploys, ingress (caddy on :80), and log streaming all run natively on
+  Apple containers — no Docker anywhere.
 EOF

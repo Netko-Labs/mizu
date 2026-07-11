@@ -22,7 +22,7 @@ export async function generateApp() {
 Next steps:
 1. Run 'bun install' to install dependencies
 2. Copy 'apps/<app-name>/sample.env' to 'apps/<app-name>/.env' and configure
-3. Run 'bun repo docker:up --app <app-name>' to start Docker containers
+3. Run 'bun repo infra:up --app <app-name>' to start infra containers
 4. Run 'bun repo db:migrate --app <app-name>' to run migrations
 5. Run 'bun repo dev --app <app-name>' to start the development server
 `)

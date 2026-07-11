@@ -11,13 +11,13 @@ Monorepo CLI
 Usage: bun run repo <command> [options]
 
 Development
-  dev --app <name>           Start full dev environment (docker + db + server)
+  dev --app <name>           Start full dev environment (infra + db + server)
   serve --app <name>         Start dev server only
   build --app <name>         Build for production
 
-Docker
-  docker:up --app <name>     Start Docker containers
-  docker:down --app <name>   Stop Docker containers
+Infra (Apple container runtime)
+  infra:up --app <name>      Start infra containers (shared Postgres)
+  infra:down --app <name>    Stop infra containers
 
 Database
   db:migrate --app <name>    Run database migrations
@@ -39,11 +39,11 @@ Testing
   test:e2e --ui              Open Playwright UI
 
 Utilities
-  status                     Show monorepo status (docker, ports, apps)
+  status                     Show monorepo status (runtime, ports, apps)
   info --app <name>          Show detailed app information
-  logs --app <name>          View Docker container logs
+  logs --app <name>          View infra container logs
   logs --app <name> -f       Follow logs in real-time
-  logs --service=<name>      View specific service logs
+  logs --service=<name>      View a specific container by name
   clean                      Remove build artifacts and caches
   reset --app <name>         Reset app (stop containers, remove volumes, fresh start)
 

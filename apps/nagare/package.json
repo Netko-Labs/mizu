@@ -8,8 +8,8 @@
     "serve": "bun run repo serve --app nagare",
     "build": "bun run repo build --app nagare",
     "start": "NODE_ENV=production bun run src/index.ts",
-    "docker:up": "bun run repo docker:up --app nagare",
-    "docker:down": "bun run repo docker:down --app nagare",
+    "infra:up": "bun run repo infra:up --app nagare",
+    "infra:down": "bun run repo infra:down --app nagare",
     "db:migrate": "bun run repo db:migrate --app nagare",
     "db:generate": "bun run repo db:generate --app nagare",
     "db:push": "bun run repo db:push --app nagare"

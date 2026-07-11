@@ -20,25 +20,11 @@ export const validateEnvironment = async (): Promise<{ valid: boolean; errors: s
     errors.push('Bun is not installed')
   }
 
-  // Check Docker
+  // Check the Apple container runtime
   try {
-    await runQuiet(['docker', '--version'])
+    await runQuiet(['container', '--version'])
   } catch {
-    errors.push('Docker is not installed or not in PATH')
-  }
-
-  // Check Docker is running
-  try {
-    await runQuiet(['docker', 'info'])
-  } catch {
-    errors.push('Docker daemon is not running')
-  }
-
-  // Check docker compose
-  try {
-    await runQuiet(['docker', 'compose', 'version'])
-  } catch {
-    errors.push('Docker Compose is not available')
+    errors.push('Apple `container` runtime is not installed (run ./scripts/setup-devbox.sh)')
   }
 
   return {

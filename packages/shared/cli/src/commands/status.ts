@@ -12,15 +12,15 @@ import { findProcessOnPort, loadEnvFile, runQuiet } from '../utils/shell'
 export const status = async () => {
   console.log('Monorepo Status\n')
 
-  // Check Docker
-  const dockerRunning = await runQuiet(['docker', 'info'])
+  // Check the Apple container runtime
+  const runtimeRunning = await runQuiet(['container', 'system', 'status'])
     .then(() => true)
     .catch(() => false)
-  console.log(`Docker: ${dockerRunning ? '✓ Running' : '✗ Not running'}`)
+  console.log(`Runtime: ${runtimeRunning ? '✓ Running' : '✗ Not running'}`)
 
   // Check running containers
-  if (dockerRunning) {
-    const containers = await runQuiet(['docker', 'ps', '--format', '{{.Names}}']).catch(() => '')
+  if (runtimeRunning) {
+    const containers = await runQuiet(['container', 'ls', '-q']).catch(() => '')
     const containerList = containers.trim().split('\n').filter(Boolean)
     console.log(`Containers: ${containerList.length > 0 ? containerList.join(', ') : 'None'}`)
   }

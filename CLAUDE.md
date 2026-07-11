@@ -35,7 +35,7 @@ specific topology, scaffolding, and commands.
     `jwt`/`jwks`). The web UI + identity provider.
   - `apps/nagare` (流れ, "flow") — a **headless** Bun/Elysia daemon (own port, `:3001`) that owns
     all business operations: workspaces, projects, services, databases, connections,
-    instance settings, Docker orchestration, deployments, and a WebSocket log stream. Verifies
+    instance settings, container orchestration, deployments, and a WebSocket log stream. Verifies
     minato JWTs via JWKS — no shared secret.
 - Minato packages: `packages/minato/{domain,repository,service,api}` (auth only) +
   `packages/configs/minato-config`.
@@ -63,7 +63,7 @@ lives in **Backend Layering** in `@docs/conventions.md`. Mizu-stack specifics:
 - `apps/nagare` is a **standalone** Elysia server started with `.listen()` (NOT `.handle()`), so
   native WebSocket upgrades work. All routes live in `packages/nagare/api/src/routes/{entity}.ts`
   (HTTP **and** the `.ws()` log stream), composed into the one exported `app`; the app entry just
-  `.listen()`s it. Docker access (dockerode) and `~/.mizu` filesystem operations run in nagare.
+  `.listen()`s it. Container orchestration and `~/.mizu` filesystem operations run in nagare.
 - **Cross-service auth**: minato mints a JWT (`GET /api/auth/token`); nagare verifies it against
   minato's JWKS (`/api/auth/jwks`) with `jose`. The frontend attaches a Bearer JWT to nagare HTTP
   calls (Eden Treaty `headers` callback) and passes `?token=` + a client-generated `?cid=` on
@@ -86,17 +86,19 @@ lives in **Backend Layering** in `@docs/conventions.md`. Mizu-stack specifics:
 - **Workspace** → **Project** → **Service / Database / Network / Volume / External service /
   Env group**, wired by **Connections** — all drawn on the canvas
   (`apps/minato/src/components/canvas/`).
-- Deployments run through nagare: generators (docker-compose, env, mizu-yml) → Docker
-  (containers/images/networks/volumes) → status + logs back to the canvas.
+- Deployments run through nagare's first-party runtime on Apple `container` (macOS 26+,
+  `packages/nagare/service/src/runtime/`): pull → per-project network → create/start → exec
+  readiness probes. A supervisor reconcile loop owns restarts/status healing (no docker, no
+  compose), and a managed Caddy container (`mizu-ingress`) exposes every running service at
+  `{service}.{project}.{domain}` (default *.localhost) with IP upstreams re-synced each pass.
+- mizu.yml (v2) is the single generated manifest; `.env`/`.env.example` carry secrets.
 
 ## Commands
 
 - Minato (frontend + auth) dev: `bun run repo dev --app minato` (localhost:3000)
 - Nagare (daemon) dev: `bun run repo dev --app nagare` (localhost:3001)
 - Production build: `bun run repo build --app minato` / `--app nagare`
-- Docker up/down: `bun run repo docker:up --app minato` (shared Postgres; nagare profile reuses
-  it). Runtime auto-detected: `docker compose` when Docker exists, else Apple `container`
-  (macOS 26+, infra only — canvas deploys still need the Docker API).
+- Infra up/down: `bun run repo infra:up --app minato` (the shared Postgres on Apple `container`)
 - Dev box provisioning (fresh Apple Silicon Mac): `./scripts/setup-devbox.sh`
 - Repo typecheck: `bun run check-types` · lint: `bun run fmt-lint` (fix: `fmt-lint:fix`) · tests:
   `bun run test`

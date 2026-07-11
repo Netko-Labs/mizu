@@ -59,10 +59,10 @@ Mizu aims to make deployment feel fluid:
 | Status | Feature | Description |
 |:------:|---------|-------------|
 | 🎯 | **Canvas Editor** | Visual flowchart interface for designing deployments |
-| 📋 | **Container Management** | Docker-based isolation with native macOS integration |
+| 🎯 | **Container Management** | Apple `container` isolation — native macOS virtualization |
 | 📋 | **Git Integration** | Deploy from GitHub, GitLab, or local repositories |
 | 📋 | **One-Click Services** | Databases, caches, message queues with minimal setup |
-| 📋 | **Reverse Proxy** | Automatic SSL and routing via Caddy/Traefik |
+| 🎯 | **Reverse Proxy** | Every app served at `{service}.{project}.{domain}` via managed Caddy |
 | 📋 | **Resource Monitoring** | CPU, memory, and network dashboards |
 | 📋 | **Backup System** | Scheduled backups to local storage or S3-compatible services |
 | 💭 | **Wake-on-LAN** | Power management for energy-conscious home labs |
@@ -81,8 +81,8 @@ apps/minato (港, harbor)   The web UI + identity provider — TanStack Start fr
                            auth-only Elysia backend (better-auth, JWT/JWKS). Port 3000.
 apps/nagare (流れ, flow)   The headless daemon — a Bun/Elysia server that owns everything that
                            actually does work: workspaces, projects, services, databases,
-                           Docker orchestration, deployments, and live log streaming over
-                           WebSockets. Port 3001.
+                           container orchestration, deployments, the Caddy ingress, and live
+                           log streaming over WebSockets. Port 3001.
 ```
 
 Minato mints JWTs; nagare verifies them against minato's JWKS — no shared secret. They share one
@@ -98,7 +98,8 @@ client.
 | Frontend | React 19, TanStack Router, TanStack Query, Eden Treaty |
 | Backend | Elysia 2, TanStack Start (SSR), Drizzle ORM, better-auth |
 | Database | PostgreSQL |
-| Containers | Docker (via dockerode) |
+| Containers | Apple `container` (first-party runtime + supervisor) |
+| Ingress | Caddy (managed `mizu-ingress` container) |
 | Runtime | Bun |
 | Build | Turborepo, Vite |
 
@@ -107,19 +108,19 @@ client.
 ## Getting Started
 
 **Fresh Mac?** One script provisions everything — bun, Apple's native
-[`container`](https://github.com/apple/container) runtime (no Docker Desktop needed), the shared
-Postgres, env files with fresh secrets, and migrations:
+[`container`](https://github.com/apple/container) runtime, the shared Postgres, env files with
+fresh secrets, and migrations:
 
 ```bash
 ./scripts/setup-devbox.sh
 ```
 
-> Canvas deploys speak the Docker API, so they stay disabled until you install Docker/OrbStack —
-> the rest of the stack (web UI, auth, daemon, DB) runs fine on Apple containers alone.
+Mizu is **apple-container-first**: deploys, per-project networks, the Caddy ingress, and log
+streaming all run on Apple's `container` runtime (macOS 26+, Apple Silicon). No Docker, no
+compose files — nagare is the orchestrator.
 
-**Manual setup**: you'll need [Bun](https://bun.sh) and a container runtime — Docker
-(OrbStack/Docker Desktop) for the full experience, or Apple `container` (macOS 26+) for the dev
-stack; the repo CLI auto-detects whichever is installed.
+**Manual setup**: [Bun](https://bun.sh) + Apple `container` 1.1+ (`brew` not required — the setup
+script installs the signed pkg).
 
 ```bash
 bun install
@@ -142,6 +143,7 @@ bun run check-types                     # typecheck everything (tsgo)
 bun run fmt-lint                        # Biome check
 bun run repo db:studio --app nagare     # poke at the database
 bun run repo status                     # what's running where
+bun run repo infra:up --app minato      # shared Postgres (Apple container)
 ```
 
 ---

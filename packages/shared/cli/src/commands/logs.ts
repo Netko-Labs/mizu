@@ -1,16 +1,16 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { getAppDir, getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
+import { getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
+import { requireAppleContainer } from '../utils/container-runtime'
 import { run } from '../utils/shell'
 
 /**
  * ✧･ﾟ: *✧･ﾟ:* LOGS COMMANDS *:･ﾟ✧*:･ﾟ✧
  *
- * View Docker container logs for an app (◕‿◕✿)
+ * View infra container logs for an app (◕‿◕✿)
  */
 
 /**
- * View Docker container logs for an app
+ * View infra container logs (the shared Postgres by default, or
+ * --service=<container-name> for any container)
  */
 export async function logs(args: string[]) {
   const appName = parseAppArg(args)
@@ -27,31 +27,21 @@ export async function logs(args: string[]) {
     process.exit(1)
   }
 
+  requireAppleContainer()
+
   const follow = args.includes('--follow') || args.includes('-f')
   const serviceArg = args.find((a) => a.startsWith('--service='))
-  const service = serviceArg?.split('=')[1]
+  const container = serviceArg?.split('=')[1] || 'mizu-db-minato'
   const tailArg = args.find((a) => a.startsWith('--tail='))
   const tail = tailArg?.split('=')[1] || '100'
 
-  const appDir = getAppDir(appName)
-  const composeFile = join(appDir, 'compose.yml')
-
-  if (!existsSync(composeFile)) {
-    console.error(`❌ No compose.yml found for ${appName}`)
-    process.exit(1)
-  }
-
-  const command = ['docker', 'compose', '-f', composeFile, 'logs', `--tail=${tail}`]
-
+  const command = ['container', 'logs', '-n', tail]
   if (follow) {
     command.push('-f')
   }
+  command.push(container)
 
-  if (service) {
-    command.push(service)
-  }
-
-  console.log(`📋 Showing logs for ${appName}${service ? ` (${service})` : ''}...\n`)
+  console.log(`📋 Showing logs for ${container}...\n`)
 
   await run(command)
 }

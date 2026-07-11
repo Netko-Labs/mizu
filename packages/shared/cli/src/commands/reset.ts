@@ -1,7 +1,7 @@
 import { $ } from 'bun'
 import { getAvailableApps, parseAppArg, validateApp } from '../utils/apps'
 import { dbMigrate, dbSeed } from './db'
-import { dockerDown, dockerUp } from './docker'
+import { infraDown, infraUp } from './infra'
 
 /**
  * ✧･ﾟ: *✧･ﾟ:* RESET COMMANDS *:･ﾟ✧*:･ﾟ✧
@@ -31,17 +31,15 @@ export async function reset(args: string[]) {
 
   // Stop containers
   console.log('🐳 Stopping containers...')
-  await dockerDown(args)
+  await infraDown(args)
 
   // Remove volumes
   console.log('\n🗑️  Removing Docker volumes...')
-  await $`docker volume rm db-${appName}-data redis-${appName}-data 2>/dev/null || true`
-    .quiet()
-    .nothrow()
+  await $`container volume rm mizu-postgres-data 2>/dev/null || true`.quiet().nothrow()
 
   // Start fresh
   console.log('\n🐳 Starting fresh containers...')
-  await dockerUp(args)
+  await infraUp(args)
 
   // Wait for DB to be ready
   console.log('\n⏳ Waiting for database...')
