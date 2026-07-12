@@ -11,8 +11,8 @@ import { useNodeActions } from './use-node-actions'
  * overlay state + drag/resize handlers, composed so the view component stays
  * within its hook budget.
  */
-export function useCanvasView(projectId: string) {
-  const canvas = useProjectCanvas(projectId)
+export function useCanvasView(projectId: string, environmentId?: string) {
+  const canvas = useProjectCanvas(projectId, environmentId)
   const overlays = useCanvasOverlays()
   const { handleNodeAction, isActionPending } = useNodeActions(projectId, () =>
     overlays.setSelectedNodeId(null),

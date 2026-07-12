@@ -22,7 +22,7 @@ import { useServiceGroups } from './use-service-groups'
  * - Debounced position updates
  * - Connection creation/deletion
  */
-export function useProjectCanvas(projectId: string) {
+export function useProjectCanvas(projectId: string, environmentId?: string) {
   const mutations = useCanvasMutations(projectId)
   const {
     createServiceMutation,
@@ -34,7 +34,10 @@ export function useProjectCanvas(projectId: string) {
     updateProjectMutation,
   } = mutations
 
-  const { project, connections, findService, findDatabase } = useCanvasEntities(projectId)
+  const { project, connections, findService, findDatabase } = useCanvasEntities(
+    projectId,
+    environmentId,
+  )
 
   const {
     serviceGroups,
@@ -111,6 +114,7 @@ export function useProjectCanvas(projectId: string) {
       createServiceMutation.mutate(
         {
           projectId,
+          environmentId,
           name: params.name,
           sourceType: params.sourceType,
           sourceConfig: sourceConfig as Parameters<
@@ -146,7 +150,7 @@ export function useProjectCanvas(projectId: string) {
         },
       )
     },
-    [projectId, createServiceMutation, serviceGroups, updateServiceGroups],
+    [projectId, environmentId, createServiceMutation, serviceGroups, updateServiceGroups],
   )
 
   /**
@@ -156,12 +160,13 @@ export function useProjectCanvas(projectId: string) {
     (params: CreateDatabaseParams) => {
       createDatabaseMutation.mutate({
         projectId,
+        environmentId,
         type: params.type,
         name: params.name,
         version: params.version,
       })
     },
-    [projectId, createDatabaseMutation],
+    [projectId, environmentId, createDatabaseMutation],
   )
 
   return {

@@ -8,11 +8,45 @@ import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { DeployDialog } from '@/components/canvas/deploy-dialog'
 import { LogsPanel } from '@/components/canvas/logs-panel'
 import { NodePropertyEditor } from '@/components/canvas/node-property-editor'
+import { ProjectSettingsDialog } from '@/components/canvas/project-settings-dialog'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
-import type { CanvasViewProps } from './lib'
-import { useCanvasView } from './lib'
+import type { CanvasViewInnerProps, CanvasViewProps } from './lib'
+import { useActiveEnvironment, useCanvasView } from './lib'
 
+/**
+ * Resolves the active deployment environment before mounting the canvas, so the
+ * Suspense graph query always has a concrete environment to scope to.
+ */
 export function CanvasView({ projectId, projectName }: CanvasViewProps) {
+  const { environments, activeEnvironmentId, setActiveEnvironmentId, isLoading } =
+    useActiveEnvironment(projectId)
+
+  if (isLoading || !activeEnvironmentId) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-black font-mono">
+        <div className="text-xs text-neutral-600">$ loading environments...</div>
+      </div>
+    )
+  }
+
+  return (
+    <CanvasViewInner
+      projectId={projectId}
+      projectName={projectName}
+      environments={environments}
+      activeEnvironmentId={activeEnvironmentId}
+      onEnvironmentChange={setActiveEnvironmentId}
+    />
+  )
+}
+
+function CanvasViewInner({
+  projectId,
+  projectName,
+  environments,
+  activeEnvironmentId,
+  onEnvironmentChange,
+}: CanvasViewInnerProps) {
   const {
     canvas,
     overlays,
@@ -25,7 +59,7 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
     actionableSelectedNodeType,
     selectedService,
     selectedDatabase,
-  } = useCanvasView(projectId)
+  } = useCanvasView(projectId, activeEnvironmentId)
 
   const {
     project,
@@ -51,6 +85,8 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
     setYamlOpen,
     deployOpen,
     setDeployOpen,
+    settingsOpen,
+    setSettingsOpen,
     selectedNodeId,
     setSelectedNodeId,
     logsTarget,
@@ -63,6 +99,10 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
       <CanvasProvider initialNodes={nodes} initialEdges={edges} onNodesUpdate={handleNodesUpdate}>
         <CanvasToolbar
           projectName={projectName}
+          projectId={projectId}
+          environments={environments}
+          activeEnvironmentId={activeEnvironmentId}
+          onEnvironmentChange={onEnvironmentChange}
           nodeCount={(project?.services.length ?? 0) + (project?.databases.length ?? 0)}
           sidebarOpen={sidebarOpen}
           yamlOpen={yamlOpen}
@@ -72,6 +112,7 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
           onToggleLogs={() =>
             setLogsTarget((prev) => (prev ? null : { nodeId: '', nodeType: 'service' }))
           }
+          onOpenSettings={() => setSettingsOpen(true)}
           onDeploy={() => setDeployOpen(true)}
         />
 
@@ -213,6 +254,9 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
 
       {/* Deploy dialog */}
       <DeployDialog projectId={projectId} open={deployOpen} onOpenChange={setDeployOpen} />
+      {settingsOpen && project && (
+        <ProjectSettingsDialog open onClose={() => setSettingsOpen(false)} project={project} />
+      )}
     </div>
   )
 }

@@ -20,10 +20,11 @@ import { clampNodeToGroupBounds, parseEntityCanvasPosition } from '../utils'
  * Fetches the project (with services and databases) and its connections,
  * plus entity lookups on the fetched data.
  */
-export function useCanvasEntities(projectId: string) {
-  // Fetch project with all services and databases (poll every 5s for status updates)
+export function useCanvasEntities(projectId: string, environmentId?: string) {
+  // Fetch the active environment's services and databases (poll every 5s for
+  // status updates)
   const { data: project } = useSuspenseQuery({
-    ...projectQueries.withServices(projectId),
+    ...projectQueries.withServices(projectId, environmentId),
     refetchInterval: 5000,
   })
 

@@ -20,7 +20,12 @@ export const projectKeys = {
   list: (teamId: string) => ['projects', 'list', teamId] as const,
   bySlug: (teamId: string, slug: string) => ['projects', 'by-slug', teamId, slug] as const,
   byId: (projectId: string) => ['projects', projectId] as const,
-  withServices: (projectId: string) => ['projects', projectId, 'with-services'] as const,
+  // Without environmentId this is the invalidation prefix; with it, the
+  // env-scoped query key (so switching environments refetches the canvas).
+  withServices: (projectId: string, environmentId?: string) =>
+    environmentId
+      ? (['projects', projectId, 'with-services', environmentId] as const)
+      : (['projects', projectId, 'with-services'] as const),
   generatedFiles: (projectId: string) => ['projects', projectId, 'generated-files'] as const,
 }
 
@@ -47,13 +52,15 @@ export const projectQueries = {
           | Serialized<Project>
           | undefined,
     }),
-  withServices: (projectId: string) =>
+  withServices: (projectId: string, environmentId?: string) =>
     queryOptions({
-      queryKey: projectKeys.withServices(projectId),
+      queryKey: projectKeys.withServices(projectId, environmentId),
       queryFn: async () =>
-        (await unwrap(nagare.projects({ projectId })['with-services'].get())) as unknown as
-          | Serialized<ProjectWithServices>
-          | undefined,
+        (await unwrap(
+          nagare.projects({ projectId })['with-services'].get({
+            query: environmentId ? { environmentId } : {},
+          }),
+        )) as unknown as Serialized<ProjectWithServices> | undefined,
     }),
   generatedFiles: (projectId: string) =>
     queryOptions({
