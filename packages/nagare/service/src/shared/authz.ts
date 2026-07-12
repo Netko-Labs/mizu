@@ -15,7 +15,11 @@ import {
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 
+// `status` is read by Elysia's default error renderer, so a thrown error maps
+// to the right HTTP code without the app-level handler returning a body (which
+// would widen the eden-inferred App response types).
 export class AuthzError extends Error {
+  readonly status = 403
   constructor(message = 'Forbidden') {
     super(message)
     this.name = 'AuthzError'
@@ -23,6 +27,7 @@ export class AuthzError extends Error {
 }
 
 export class NotFoundError extends Error {
+  readonly status = 404
   constructor(message = 'Not found') {
     super(message)
     this.name = 'NotFoundError'

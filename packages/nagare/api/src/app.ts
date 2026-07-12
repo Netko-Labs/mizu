@@ -37,21 +37,16 @@ export const app = new Elysia()
     set.status = 204
     return ''
   })
-  // Map ownership failures to an HTTP status; log everything else. We only set
-  // `set.status` (never return a body) so the handler contributes nothing to
-  // the eden-inferred App response types — a returned body would widen the
-  // ephemeral `response` schema and break the treaty<App> client constraint.
-  .error(({ path, error, set }) => {
-    if (error instanceof AuthzError) {
-      set.status = 403
-    } else if (error instanceof NotFoundError) {
-      set.status = 404
-    } else {
-      logger.error(
-        { path, err: error instanceof Error ? error.message : String(error) },
-        'nagare error',
-      )
-    }
+  // Ownership failures carry their own `status` (403/404), which Elysia's
+  // default renderer honours — so this handler only logs the unexpected ones
+  // and returns nothing (a returned body would widen the eden-inferred App
+  // response types and break the treaty<App> client constraint).
+  .error(({ path, error }) => {
+    if (error instanceof AuthzError || error instanceof NotFoundError) return
+    logger.error(
+      { path, err: error instanceof Error ? error.message : String(error) },
+      'nagare error',
+    )
   })
   // ٩(◕‿◕)۶ health check — is the daemon flowing?
   .get('/health', async () => ({
