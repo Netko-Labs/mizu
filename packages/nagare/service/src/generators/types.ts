@@ -7,7 +7,6 @@ import type {
   Service,
   ServiceConnection,
   Volume,
-  Workspace,
 } from '@mizu/nagare-domain'
 
 /**
@@ -15,7 +14,8 @@ import type {
  * This is the source of truth loaded from/saved to files.
  */
 export interface ProjectManifest {
-  workspace: Pick<Workspace, 'name' | 'slug'>
+  /** The owning team (better-auth organization); slug = organization id. */
+  team: { name: string; slug: string }
   project: Pick<Project, 'name' | 'slug' | 'description' | 'settings'>
   services: Service[]
   databases: Database[]

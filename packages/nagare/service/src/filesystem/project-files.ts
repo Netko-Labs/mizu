@@ -13,7 +13,7 @@ export async function writeProjectFiles(
   options: { includeComments?: boolean } = {},
 ): Promise<void> {
   const files = await generateAllFiles(manifest, options)
-  const paths = getProjectFilePaths(manifest.workspace.slug, manifest.project.slug)
+  const paths = getProjectFilePaths(manifest.team.slug, manifest.project.slug)
 
   // Ensure project directory exists
   await ensureDir(paths.dir)

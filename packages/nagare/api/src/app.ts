@@ -1,6 +1,6 @@
 import { createLogger } from '@mizu/logger'
 import { nagareEnvConfig } from '@mizu/nagare-config'
-import { isRuntimeAvailable } from '@mizu/nagare-service'
+import { AuthzError, isRuntimeAvailable, NotFoundError } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { connectionsRoutes } from './routes/connections'
 import { databasesRoutes } from './routes/databases'
@@ -10,7 +10,6 @@ import { projectsRoutes } from './routes/projects'
 import { servicesRoutes } from './routes/services'
 import { systemRoutes } from './routes/system'
 import { templatesRoutes } from './routes/templates'
-import { workspacesRoutes } from './routes/workspaces'
 
 const logger = createLogger('nagare-api')
 const allowedOrigins = nagareEnvConfig.app.cors
@@ -38,11 +37,21 @@ export const app = new Elysia()
     set.status = 204
     return ''
   })
-  .error(({ path, error }) => {
-    logger.error(
-      { path, err: error instanceof Error ? error.message : String(error) },
-      'nagare error',
-    )
+  // Map ownership failures to an HTTP status; log everything else. We only set
+  // `set.status` (never return a body) so the handler contributes nothing to
+  // the eden-inferred App response types — a returned body would widen the
+  // ephemeral `response` schema and break the treaty<App> client constraint.
+  .error(({ path, error, set }) => {
+    if (error instanceof AuthzError) {
+      set.status = 403
+    } else if (error instanceof NotFoundError) {
+      set.status = 404
+    } else {
+      logger.error(
+        { path, err: error instanceof Error ? error.message : String(error) },
+        'nagare error',
+      )
+    }
   })
   // ٩(◕‿◕)۶ health check — is the daemon flowing?
   .get('/health', async () => ({
@@ -50,7 +59,6 @@ export const app = new Elysia()
     runtime: await isRuntimeAvailable(),
     timestamp: new Date().toISOString(),
   }))
-  .use(workspacesRoutes)
   .use(projectsRoutes)
   .use(servicesRoutes)
   .use(databasesRoutes)

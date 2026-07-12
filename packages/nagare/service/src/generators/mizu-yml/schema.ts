@@ -50,7 +50,7 @@ export const MizuServiceGroupSchema = z.object({
  */
 export const MizuYmlSchema = z.object({
   version: z.literal(2),
-  project: z.object({ name: z.string(), slug: z.string(), workspace: z.string() }),
+  project: z.object({ name: z.string(), slug: z.string(), team: z.string() }),
   services: z.record(z.string(), MizuServiceSchema).optional(),
   databases: z.record(z.string(), MizuDatabaseSchema).optional(),
   networks: z.array(z.string()).optional(),

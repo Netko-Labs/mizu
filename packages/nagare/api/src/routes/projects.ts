@@ -1,10 +1,6 @@
+import { CreateProjectSchema, UpdateProjectSchema } from '@mizu/nagare-domain'
 import {
-  CreateProjectSchema,
-  ProjectBySlugQuerySchema,
-  ProjectListQuerySchema,
-  UpdateProjectSchema,
-} from '@mizu/nagare-domain'
-import {
+  assertProjectOwned,
   createProject,
   deleteProject,
   getProject,
@@ -19,36 +15,46 @@ import { authPlugin } from '../setup'
 
 export const projectsRoutes = new Elysia({ name: 'projects', prefix: '/projects' })
   .use(authPlugin)
-  // (｡◕‿◕｡) projects in a workspace
-  .get('/', { auth: true, query: ProjectListQuerySchema }, ({ user, query }) =>
-    listProjects(user.id, query.workspaceId),
-  )
-  // (・o・)ゞ find a project by its slug
-  .get(
-    '/by-slug/:slug',
-    { auth: true, query: ProjectBySlugQuerySchema },
-    ({ user, params, query }) => getProjectBySlug(user.id, query.workspaceId, params.slug),
+  // (｡◕‿◕｡) projects in the active team
+  .get('/', { auth: true }, ({ user }) => listProjects(user.organizationId))
+  // (・o・)ゞ find a project by its slug (scoped to the team)
+  .get('/by-slug/:slug', { auth: true }, ({ user, params }) =>
+    getProjectBySlug(user.organizationId, params.slug),
   )
   // (・o・)ゞ one project by id
-  .get('/:projectId', { auth: true }, ({ params }) => getProject(params.projectId))
+  .get('/:projectId', { auth: true }, async ({ user, params }) => {
+    await assertProjectOwned(params.projectId, user.organizationId)
+    return getProject(params.projectId)
+  })
   // (◍•ᴗ•◍) project + its services and databases
-  .get('/:projectId/with-services', { auth: true }, ({ params }) =>
-    getProjectWithServices(params.projectId),
-  )
+  .get('/:projectId/with-services', { auth: true }, async ({ user, params }) => {
+    await assertProjectOwned(params.projectId, user.organizationId)
+    return getProjectWithServices(params.projectId)
+  })
   // (¬‿¬) the generated compose/env files
-  .get('/:projectId/files', { auth: true }, ({ params }) => getProjectFiles(params.projectId))
-  // ✨(っ◔◡◔)っ a brand-new project
+  .get('/:projectId/files', { auth: true }, async ({ user, params }) => {
+    await assertProjectOwned(params.projectId, user.organizationId)
+    return getProjectFiles(params.projectId)
+  })
+  // ✨(っ◔◡◔)っ a brand-new project in the active team
   .post('/', { auth: true, body: CreateProjectSchema }, ({ user, body }) =>
     createProject({
-      userId: user.id,
-      workspaceId: body.workspaceId,
+      organizationId: user.organizationId,
       name: body.name,
       description: body.description,
     }),
   )
   // (๑˃ᴗ˂)ﻭ tweak a project
-  .patch('/:projectId', { auth: true, body: UpdateProjectSchema }, ({ params, body }) =>
-    updateProject(params.projectId, body),
+  .patch(
+    '/:projectId',
+    { auth: true, body: UpdateProjectSchema },
+    async ({ user, params, body }) => {
+      await assertProjectOwned(params.projectId, user.organizationId)
+      return updateProject(params.projectId, body)
+    },
   )
   // (ノ﹏ヽ) delete a project
-  .delete('/:projectId', { auth: true }, ({ params }) => deleteProject(params.projectId))
+  .delete('/:projectId', { auth: true }, async ({ user, params }) => {
+    await assertProjectOwned(params.projectId, user.organizationId)
+    return deleteProject(params.projectId)
+  })

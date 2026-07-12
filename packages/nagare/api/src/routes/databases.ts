@@ -5,6 +5,8 @@ import {
   UpdateDatabaseSchema,
 } from '@mizu/nagare-domain'
 import {
+  assertDatabaseOwned,
+  assertProjectOwned,
   createDatabase,
   deleteDatabase,
   deployDatabase,
@@ -22,33 +24,66 @@ import { authPlugin } from '../setup'
 
 export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databases' })
   .use(authPlugin)
-  // (｡◕‿◕｡) databases in a project
-  .get('/', { auth: true, query: DatabaseListQuerySchema }, ({ query }) =>
-    listDatabases(query.projectId),
-  )
+  // (｡◕‿◕｡) databases in a project (project must belong to the team)
+  .get('/', { auth: true, query: DatabaseListQuerySchema }, async ({ user, query }) => {
+    await assertProjectOwned(query.projectId, user.organizationId)
+    return listDatabases(query.projectId)
+  })
   // (・o・)ゞ one database
-  .get('/:databaseId', { auth: true }, ({ params }) => getDatabase(params.databaseId))
+  .get('/:databaseId', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return getDatabase(params.databaseId)
+  })
   // (⌐■_■) container status
-  .get('/:databaseId/status', { auth: true }, ({ params }) => getDatabaseStatus(params.databaseId))
-  // 🔑 connection string + credentials
-  .get('/:databaseId/connection-info', { auth: true }, ({ params }) =>
-    getDatabaseConnectionInfo(params.databaseId),
-  )
-  // ✨(っ◔◡◔)っ a new database
-  .post('/', { auth: true, body: CreateDatabaseSchema }, ({ body }) => createDatabase(body))
+  .get('/:databaseId/status', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return getDatabaseStatus(params.databaseId)
+  })
+  // 🔑 connection string + credentials (guard hard — this decrypts secrets)
+  .get('/:databaseId/connection-info', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return getDatabaseConnectionInfo(params.databaseId)
+  })
+  // ✨(っ◔◡◔)っ a new database (in a project the team owns)
+  .post('/', { auth: true, body: CreateDatabaseSchema }, async ({ user, body }) => {
+    await assertProjectOwned(body.projectId, user.organizationId)
+    return createDatabase(body)
+  })
   // (๑˃ᴗ˂)ﻭ tweak a database
-  .patch('/:databaseId', { auth: true, body: UpdateDatabaseSchema }, ({ params, body }) =>
-    updateDatabase(params.databaseId, body),
+  .patch(
+    '/:databaseId',
+    { auth: true, body: UpdateDatabaseSchema },
+    async ({ user, params, body }) => {
+      await assertDatabaseOwned(params.databaseId, user.organizationId)
+      return updateDatabase(params.databaseId, body)
+    },
   )
   // ⇢ nudge the node on the canvas
-  .patch('/:databaseId/position', { auth: true, body: PositionSchema }, ({ params, body }) =>
-    updateDatabaseCanvasPosition(params.databaseId, body.position),
+  .patch(
+    '/:databaseId/position',
+    { auth: true, body: PositionSchema },
+    async ({ user, params, body }) => {
+      await assertDatabaseOwned(params.databaseId, user.organizationId)
+      return updateDatabaseCanvasPosition(params.databaseId, body.position)
+    },
   )
   // (ノ﹏ヽ) delete a database
-  .delete('/:databaseId', { auth: true }, ({ params }) => deleteDatabase(params.databaseId))
+  .delete('/:databaseId', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return deleteDatabase(params.databaseId)
+  })
   // 🚀 provision + start
-  .post('/:databaseId/deploy', { auth: true }, ({ params }) => deployDatabase(params.databaseId))
+  .post('/:databaseId/deploy', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return deployDatabase(params.databaseId)
+  })
   // ▶ start the container
-  .post('/:databaseId/start', { auth: true }, ({ params }) => startDatabase(params.databaseId))
+  .post('/:databaseId/start', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return startDatabase(params.databaseId)
+  })
   // ⏹ stop the container
-  .post('/:databaseId/stop', { auth: true }, ({ params }) => stopDatabase(params.databaseId))
+  .post('/:databaseId/stop', { auth: true }, async ({ user, params }) => {
+    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    return stopDatabase(params.databaseId)
+  })

@@ -8,9 +8,9 @@ export const instanceSettingsRoutes = new Elysia({
   prefix: '/instance-settings',
 })
   .use(authPlugin)
-  // (◕ᴗ◕✿) current instance settings
+  // (◕ᴗ◕✿) current instance settings — any team member may read
   .get('/', { auth: true }, () => getInstanceSettings())
-  // (๑˃ᴗ˂)ﻭ create-or-update the singleton settings row
-  .put('/', { auth: true, body: UpsertInstanceSettingsSchema }, ({ body }) =>
+  // (๑˃ᴗ˂)ﻭ create-or-update the singleton settings row — owners/admins only
+  .put('/', { ownerOrAdmin: true, body: UpsertInstanceSettingsSchema }, ({ body }) =>
     upsertInstanceSettings(body),
   )

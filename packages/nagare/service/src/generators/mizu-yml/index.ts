@@ -71,7 +71,7 @@ export async function generateMizuYml(
     project: {
       name: manifest.project.name,
       slug: manifest.project.slug,
-      workspace: manifest.workspace.slug,
+      team: manifest.team.slug,
     },
   }
 

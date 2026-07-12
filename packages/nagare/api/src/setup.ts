@@ -15,4 +15,17 @@ export const authPlugin = new Elysia({ name: 'auth' }).macro({
       return { user }
     },
   },
+  // Stricter opt-in: authenticated AND the caller is an owner/admin of the
+  // active team. Used for team-wide/instance settings.
+  ownerOrAdmin: {
+    async derive({ headers, status }) {
+      const token = headers.authorization?.replace(/^Bearer /, '')
+      const user = token ? await verifyToken(token) : null
+      if (!user) return status(401, 'Unauthorized')
+      if (user.role !== 'owner' && user.role !== 'admin') {
+        return status(403, 'Forbidden: requires owner or admin')
+      }
+      return { user }
+    },
+  },
 })

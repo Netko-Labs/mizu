@@ -1,38 +1,25 @@
-import { type Project, type Workspace, workspaceTable } from '@mizu/nagare-domain'
-import { db } from '@mizu/nagare-repository'
-import { eq } from 'drizzle-orm'
+import type { Project } from '@mizu/nagare-domain'
 import type { ProjectManifest } from '../../generators/types'
 import { listConnectionsForProject } from '../connections/list-connections'
 import { getProjectWithServices } from './get-project-with-services'
 
 interface BuildManifestResult {
   manifest: ProjectManifest
-  workspace: Workspace
+  organizationId: string
 }
 
 export async function buildProjectManifest(projectId: string): Promise<BuildManifestResult | null> {
   const project = await getProjectWithServices(projectId)
-
-  if (!project || !project.workspaceId) {
-    return null
-  }
-
-  const [workspace] = await db
-    .select()
-    .from(workspaceTable)
-    .where(eq(workspaceTable.id, project.workspaceId))
-
-  if (!workspace) {
+  if (!project) {
     return null
   }
 
   const connections = await listConnectionsForProject(projectId)
 
-  const manifest = {
-    workspace: {
-      name: workspace.name,
-      slug: workspace.slug,
-    },
+  const manifest: ProjectManifest = {
+    // nagare only knows the team by id (the human name lives in minato); the
+    // id is a stable slug for the export directory + manifest.
+    team: { name: project.organizationId, slug: project.organizationId },
     project: {
       name: project.name,
       slug: project.slug,
@@ -48,5 +35,5 @@ export async function buildProjectManifest(projectId: string): Promise<BuildMani
     connections,
   }
 
-  return { manifest, workspace: workspace as Workspace }
+  return { manifest, organizationId: project.organizationId }
 }

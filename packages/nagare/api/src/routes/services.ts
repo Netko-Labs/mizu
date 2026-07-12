@@ -5,6 +5,8 @@ import {
   UpdateServiceSchema,
 } from '@mizu/nagare-domain'
 import {
+  assertProjectOwned,
+  assertServiceOwned,
   createService,
   deleteService,
   deployService,
@@ -22,39 +24,72 @@ import { authPlugin } from '../setup'
 
 export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services' })
   .use(authPlugin)
-  // (｡◕‿◕｡) services in a project
-  .get('/', { auth: true, query: ServiceListQuerySchema }, ({ query }) =>
-    listServices(query.projectId),
-  )
+  // (｡◕‿◕｡) services in a project (project must belong to the team)
+  .get('/', { auth: true, query: ServiceListQuerySchema }, async ({ user, query }) => {
+    await assertProjectOwned(query.projectId, user.organizationId)
+    return listServices(query.projectId)
+  })
   // (・o・)ゞ one service
-  .get('/:serviceId', { auth: true }, ({ params }) => getService(params.serviceId))
+  .get('/:serviceId', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return getService(params.serviceId)
+  })
   // (⌐■_■) container status
-  .get('/:serviceId/status', { auth: true }, ({ params }) => getServiceStatus(params.serviceId))
-  // ✨(っ◔◡◔)っ a new service
-  .post('/', { auth: true, body: CreateServiceSchema }, ({ body }) =>
-    createService({
+  .get('/:serviceId/status', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return getServiceStatus(params.serviceId)
+  })
+  // ✨(っ◔◡◔)っ a new service (in a project the team owns)
+  .post('/', { auth: true, body: CreateServiceSchema }, async ({ user, body }) => {
+    await assertProjectOwned(body.projectId, user.organizationId)
+    return createService({
       projectId: body.projectId,
       name: body.name,
       sourceType: body.sourceType,
       sourceConfig: body.sourceConfig,
       ports: body.ports,
-    }),
-  )
+    })
+  })
   // (๑˃ᴗ˂)ﻭ tweak a service
-  .patch('/:serviceId', { auth: true, body: UpdateServiceSchema }, ({ params, body }) =>
-    updateService(params.serviceId, body),
+  .patch(
+    '/:serviceId',
+    { auth: true, body: UpdateServiceSchema },
+    async ({ user, params, body }) => {
+      await assertServiceOwned(params.serviceId, user.organizationId)
+      return updateService(params.serviceId, body)
+    },
   )
   // ⇢ nudge the node on the canvas
-  .patch('/:serviceId/position', { auth: true, body: PositionSchema }, ({ params, body }) =>
-    updateCanvasPosition(params.serviceId, body.position),
+  .patch(
+    '/:serviceId/position',
+    { auth: true, body: PositionSchema },
+    async ({ user, params, body }) => {
+      await assertServiceOwned(params.serviceId, user.organizationId)
+      return updateCanvasPosition(params.serviceId, body.position)
+    },
   )
   // (ノ﹏ヽ) delete a service
-  .delete('/:serviceId', { auth: true }, ({ params }) => deleteService(params.serviceId))
+  .delete('/:serviceId', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return deleteService(params.serviceId)
+  })
   // 🚀 ship it
-  .post('/:serviceId/deploy', { auth: true }, ({ params }) => deployService(params.serviceId))
+  .post('/:serviceId/deploy', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return deployService(params.serviceId)
+  })
   // ▶ start the container
-  .post('/:serviceId/start', { auth: true }, ({ params }) => startService(params.serviceId))
+  .post('/:serviceId/start', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return startService(params.serviceId)
+  })
   // ⏹ stop the container
-  .post('/:serviceId/stop', { auth: true }, ({ params }) => stopService(params.serviceId))
+  .post('/:serviceId/stop', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return stopService(params.serviceId)
+  })
   // 🔄 restart the container
-  .post('/:serviceId/restart', { auth: true }, ({ params }) => restartService(params.serviceId))
+  .post('/:serviceId/restart', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return restartService(params.serviceId)
+  })
