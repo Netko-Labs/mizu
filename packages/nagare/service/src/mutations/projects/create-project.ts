@@ -2,6 +2,7 @@ import { type Project, projectTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import { generateUniqueSlug, slugify } from '../../shared'
+import { ensureDefaultEnvironment } from '../environments/ensure-default-environment'
 
 interface CreateProjectData {
   organizationId: string
@@ -32,6 +33,11 @@ export const createProject = async (data: CreateProjectData): Promise<Project> =
       description: data.description,
     })
     .returning()
+
+  if (!project) throw new Error('Failed to create project')
+
+  // Every project starts with a default 'production' environment.
+  await ensureDefaultEnvironment(project.id)
 
   return project as Project
 }

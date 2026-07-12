@@ -1,5 +1,6 @@
 export * from './databases'
 export * from './env-groups'
+export * from './environments'
 export * from './external-services'
 export * from './instance-settings'
 export * from './networks'

@@ -3,14 +3,15 @@ import { type ImageSourceConfig, projectTable, serviceTable } from '@mizu/nagare
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 import { syncIngressSafe } from '../../ingress'
+import { getDeployContext } from '../../queries/environments'
 import {
   createContainer,
-  ensureProjectNetwork,
+  ensureDeployNetwork,
+  entityContainerName,
   MIZU_LABELS,
   pullImage,
   removeContainer,
   resolveConnectionEnvVars,
-  sanitizeName,
   startContainer,
   stopContainer,
 } from '../../runtime'
@@ -50,6 +51,14 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     return { success: false, error: 'Parent project not found' }
   }
 
+  // Everything this service deploys (container, network, peer lookups) lives in
+  // its environment's namespace, isolated from the project's other environments.
+  const deployCtx = await getDeployContext(service.environmentId)
+  if (!deployCtx) {
+    return { success: false, error: 'Environment not found' }
+  }
+  const { namespace } = deployCtx
+
   try {
     // If there's an existing container, remove it first (stale deploy cleanup)
     if (service.containerId) {
@@ -82,10 +91,10 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     // 3. Ensure project network
     await db.update(serviceTable).set({ status: 'starting' }).where(eq(serviceTable.id, serviceId))
 
-    const networkName = await ensureProjectNetwork(project.id, project.slug)
+    const networkName = await ensureDeployNetwork(namespace)
 
     // 4. Resolve connection env vars + merge user env vars
-    const connectionEnvVars = await resolveConnectionEnvVars(serviceId, project.slug)
+    const connectionEnvVars = await resolveConnectionEnvVars(serviceId, namespace)
 
     let userEnvVars: Record<string, string> = {}
     if (service.envVars) {
@@ -104,7 +113,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     const env = { ...connectionEnvVars, ...userEnvVars }
 
     // 5. Build container config
-    const containerName = `mizu-${sanitizeName(project.slug)}-${sanitizeName(service.name)}`
+    const containerName = entityContainerName(namespace, service.name)
 
     // Guard against name collisions from a lost containerId (best-effort)
     await removeContainer(containerName, true).catch(() => {})

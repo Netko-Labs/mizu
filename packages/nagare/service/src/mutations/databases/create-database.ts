@@ -45,6 +45,7 @@ const generateDatabaseName = (baseName: string): string => {
  */
 export const createDatabase = async (data: {
   projectId: string
+  environmentId: string
   type: DatabaseType
   name: string
   version?: string
@@ -52,7 +53,7 @@ export const createDatabase = async (data: {
   const existingDatabases = await db
     .select({ id: databaseTable.id })
     .from(databaseTable)
-    .where(eq(databaseTable.projectId, data.projectId))
+    .where(eq(databaseTable.environmentId, data.environmentId))
 
   // Generate credentials
   const credentials: DatabaseCredentials = {
@@ -69,6 +70,7 @@ export const createDatabase = async (data: {
     .insert(databaseTable)
     .values({
       projectId: data.projectId,
+      environmentId: data.environmentId,
       type: data.type,
       name: data.name,
       version: data.version || DEFAULT_VERSIONS[data.type],

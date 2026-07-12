@@ -14,6 +14,7 @@ import {
   getDatabaseConnectionInfo,
   getDatabaseStatus,
   listDatabases,
+  resolveEnvironmentId,
   startDatabase,
   stopDatabase,
   updateDatabase,
@@ -24,10 +25,11 @@ import { authPlugin } from '../setup'
 
 export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databases' })
   .use(authPlugin)
-  // (｡◕‿◕｡) databases in a project (project must belong to the team)
+  // (｡◕‿◕｡) databases in a project (project must belong to the team), optionally
+  // scoped to one environment
   .get('/', { auth: true, query: DatabaseListQuerySchema }, async ({ user, query }) => {
     await assertProjectOwned(query.projectId, user.organizationId)
-    return listDatabases(query.projectId)
+    return listDatabases(query.projectId, query.environmentId)
   })
   // (・o・)ゞ one database
   .get('/:databaseId', { auth: true }, async ({ user, params }) => {
@@ -44,10 +46,18 @@ export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databas
     await assertDatabaseOwned(params.databaseId, user.organizationId)
     return getDatabaseConnectionInfo(params.databaseId)
   })
-  // ✨(っ◔◡◔)っ a new database (in a project the team owns)
+  // ✨(っ◔◡◔)っ a new database (in a project the team owns, in the given
+  // environment or the project's default)
   .post('/', { auth: true, body: CreateDatabaseSchema }, async ({ user, body }) => {
     await assertProjectOwned(body.projectId, user.organizationId)
-    return createDatabase(body)
+    const environmentId = await resolveEnvironmentId(body.projectId, body.environmentId)
+    return createDatabase({
+      projectId: body.projectId,
+      environmentId,
+      type: body.type,
+      name: body.name,
+      version: body.version,
+    })
   })
   // (๑˃ᴗ˂)ﻭ tweak a database
   .patch(

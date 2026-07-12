@@ -20,7 +20,7 @@ export {
   resolveContainerIp,
 } from './env-resolution'
 export { pullImage, qualifyImageRef } from './images'
-export { ensureProjectNetwork, listNetworkNames, sanitizeName } from './networks'
+export { deployNamespace, ensureDeployNetwork, listNetworkNames, sanitizeName } from './networks'
 export { ensureRuntimeRunning, getRuntimeInfo, isRuntimeAvailable } from './system'
 export * from './types'
 export { createVolume } from './volumes'

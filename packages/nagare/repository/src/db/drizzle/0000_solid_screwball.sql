@@ -1,6 +1,7 @@
 CREATE TABLE "database" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"project_id" uuid NOT NULL,
+	"environment_id" uuid NOT NULL,
 	"type" text NOT NULL,
 	"name" text NOT NULL,
 	"version" text,
@@ -22,6 +23,17 @@ CREATE TABLE "env_group" (
 	"canvas_position" jsonb DEFAULT '{"x":0,"y":0}'::jsonb NOT NULL,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "environment" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"project_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"slug" text NOT NULL,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp NOT NULL,
+	"updated_at" timestamp NOT NULL,
+	CONSTRAINT "environment_projectId_slug_unique" UNIQUE("project_id","slug")
 );
 --> statement-breakpoint
 CREATE TABLE "external_service" (
@@ -105,6 +117,7 @@ CREATE TABLE "service_env_group" (
 CREATE TABLE "service" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"project_id" uuid NOT NULL,
+	"environment_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"source_type" text NOT NULL,
 	"source_config" jsonb NOT NULL,
@@ -130,7 +143,9 @@ CREATE TABLE "volume" (
 );
 --> statement-breakpoint
 ALTER TABLE "database" ADD CONSTRAINT "database_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "database" ADD CONSTRAINT "database_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "env_group" ADD CONSTRAINT "env_group_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "environment" ADD CONSTRAINT "environment_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "external_service" ADD CONSTRAINT "external_service_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "network" ADD CONSTRAINT "network_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "service_connection" ADD CONSTRAINT "service_connection_from_service_id_service_id_fk" FOREIGN KEY ("from_service_id") REFERENCES "public"."service"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -142,9 +157,12 @@ ALTER TABLE "service_connection" ADD CONSTRAINT "service_connection_to_env_group
 ALTER TABLE "service_env_group" ADD CONSTRAINT "service_env_group_service_id_service_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."service"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "service_env_group" ADD CONSTRAINT "service_env_group_env_group_id_env_group_id_fk" FOREIGN KEY ("env_group_id") REFERENCES "public"."env_group"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "service" ADD CONSTRAINT "service_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "service" ADD CONSTRAINT "service_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "volume" ADD CONSTRAINT "volume_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "database_projectId_idx" ON "database" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "database_environmentId_idx" ON "database" USING btree ("environment_id");--> statement-breakpoint
 CREATE INDEX "env_group_projectId_idx" ON "env_group" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "environment_projectId_idx" ON "environment" USING btree ("project_id");--> statement-breakpoint
 CREATE INDEX "external_service_projectId_idx" ON "external_service" USING btree ("project_id");--> statement-breakpoint
 CREATE INDEX "network_projectId_idx" ON "network" USING btree ("project_id");--> statement-breakpoint
 CREATE INDEX "project_organizationId_idx" ON "project" USING btree ("organization_id");--> statement-breakpoint
@@ -157,4 +175,5 @@ CREATE INDEX "service_connection_toEnvGroupId_idx" ON "service_connection" USING
 CREATE INDEX "service_env_group_serviceId_idx" ON "service_env_group" USING btree ("service_id");--> statement-breakpoint
 CREATE INDEX "service_env_group_envGroupId_idx" ON "service_env_group" USING btree ("env_group_id");--> statement-breakpoint
 CREATE INDEX "service_projectId_idx" ON "service" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "service_environmentId_idx" ON "service" USING btree ("environment_id");--> statement-breakpoint
 CREATE INDEX "volume_projectId_idx" ON "volume" USING btree ("project_id");

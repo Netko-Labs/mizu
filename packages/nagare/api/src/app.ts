@@ -1,9 +1,10 @@
 import { createLogger } from '@mizu/logger'
 import { nagareEnvConfig } from '@mizu/nagare-config'
-import { AuthzError, isRuntimeAvailable, NotFoundError } from '@mizu/nagare-service'
+import { AuthzError, ConflictError, isRuntimeAvailable, NotFoundError } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { connectionsRoutes } from './routes/connections'
 import { databasesRoutes } from './routes/databases'
+import { environmentsRoutes } from './routes/environments'
 import { instanceSettingsRoutes } from './routes/instance-settings'
 import { logsRoutes } from './routes/logs'
 import { projectsRoutes } from './routes/projects'
@@ -42,7 +43,12 @@ export const app = new Elysia()
   // and returns nothing (a returned body would widen the eden-inferred App
   // response types and break the treaty<App> client constraint).
   .error(({ path, error }) => {
-    if (error instanceof AuthzError || error instanceof NotFoundError) return
+    if (
+      error instanceof AuthzError ||
+      error instanceof NotFoundError ||
+      error instanceof ConflictError
+    )
+      return
     logger.error(
       { path, err: error instanceof Error ? error.message : String(error) },
       'nagare error',
@@ -58,6 +64,7 @@ export const app = new Elysia()
   .use(servicesRoutes)
   .use(databasesRoutes)
   .use(connectionsRoutes)
+  .use(environmentsRoutes)
   .use(instanceSettingsRoutes)
   .use(systemRoutes)
   .use(templatesRoutes)

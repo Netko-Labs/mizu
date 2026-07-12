@@ -8,6 +8,7 @@
 
 import {
   databaseTable,
+  environmentTable,
   projectTable,
   serviceConnectionTable,
   serviceTable,
@@ -34,12 +35,33 @@ export class NotFoundError extends Error {
   }
 }
 
+/** A well-formed request that conflicts with current state (→ 409). */
+export class ConflictError extends Error {
+  readonly status = 409
+  constructor(message = 'Conflict') {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
+
 /** Assert a project belongs to the team; returns the project row. */
 export async function assertProjectOwned(projectId: string, organizationId: string) {
   const [project] = await db.select().from(projectTable).where(eq(projectTable.id, projectId))
   if (!project) throw new NotFoundError('Project not found')
   if (project.organizationId !== organizationId) throw new AuthzError()
   return project
+}
+
+/** Assert an environment's project belongs to the team; returns the env row. */
+export async function assertEnvironmentOwned(environmentId: string, organizationId: string) {
+  const [row] = await db
+    .select({ environment: environmentTable, organizationId: projectTable.organizationId })
+    .from(environmentTable)
+    .innerJoin(projectTable, eq(environmentTable.projectId, projectTable.id))
+    .where(eq(environmentTable.id, environmentId))
+  if (!row) throw new NotFoundError('Environment not found')
+  if (row.organizationId !== organizationId) throw new AuthzError()
+  return row.environment
 }
 
 /** Assert a service's project belongs to the team; returns the service row. */

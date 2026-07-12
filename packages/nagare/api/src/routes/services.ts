@@ -13,6 +13,7 @@ import {
   getService,
   getServiceStatus,
   listServices,
+  resolveEnvironmentId,
   restartService,
   startService,
   stopService,
@@ -24,10 +25,11 @@ import { authPlugin } from '../setup'
 
 export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services' })
   .use(authPlugin)
-  // (｡◕‿◕｡) services in a project (project must belong to the team)
+  // (｡◕‿◕｡) services in a project (project must belong to the team), optionally
+  // scoped to one environment
   .get('/', { auth: true, query: ServiceListQuerySchema }, async ({ user, query }) => {
     await assertProjectOwned(query.projectId, user.organizationId)
-    return listServices(query.projectId)
+    return listServices(query.projectId, query.environmentId)
   })
   // (・o・)ゞ one service
   .get('/:serviceId', { auth: true }, async ({ user, params }) => {
@@ -39,11 +41,14 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
     await assertServiceOwned(params.serviceId, user.organizationId)
     return getServiceStatus(params.serviceId)
   })
-  // ✨(っ◔◡◔)っ a new service (in a project the team owns)
+  // ✨(っ◔◡◔)っ a new service (in a project the team owns, in the given
+  // environment or the project's default)
   .post('/', { auth: true, body: CreateServiceSchema }, async ({ user, body }) => {
     await assertProjectOwned(body.projectId, user.organizationId)
+    const environmentId = await resolveEnvironmentId(body.projectId, body.environmentId)
     return createService({
       projectId: body.projectId,
+      environmentId,
       name: body.name,
       sourceType: body.sourceType,
       sourceConfig: body.sourceConfig,

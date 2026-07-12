@@ -6,10 +6,16 @@
  */
 
 import { nagareEnvConfig } from '@mizu/nagare-config'
-import { instanceSettingTable, projectTable, serviceTable } from '@mizu/nagare-domain'
+import {
+  environmentTable,
+  instanceSettingTable,
+  type ProjectSettings,
+  projectTable,
+  serviceTable,
+} from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
-import { listContainers, sanitizeName } from '../runtime'
+import { deployNamespace, listContainers, sanitizeName } from '../runtime'
 import {
   DEFAULT_BASE_DOMAIN,
   INGRESS_ADMIN_PORT,
@@ -19,14 +25,18 @@ import {
 import { getTailscaleIdentity } from './identity'
 import type { CaddyConfig, CaddyRoute } from './types'
 
-/** The public host a deployed service is served on */
+/**
+ * The public host a deployed service is served on. `namespace` is the
+ * project+environment deploy namespace, so the default environment stays
+ * `{service}-{project}.{domain}` and others become `{service}-{project}-{env}`.
+ */
 export function serviceIngressHost(
   serviceName: string,
-  projectSlug: string,
+  namespace: string,
   baseDomain: string,
 ): string {
   // Single label so one wildcard cert (*.domain) covers every app
-  return `${sanitizeName(serviceName)}-${sanitizeName(projectSlug)}.${baseDomain}`
+  return `${sanitizeName(serviceName)}-${sanitizeName(namespace)}.${baseDomain}`
 }
 
 /** Base domain from instance settings, defaulting to *.localhost */
@@ -57,9 +67,13 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
       ports: serviceTable.ports,
       containerId: serviceTable.containerId,
       projectSlug: projectTable.slug,
+      projectSettings: projectTable.settings,
+      envSlug: environmentTable.slug,
+      envIsDefault: environmentTable.isDefault,
     })
     .from(serviceTable)
     .innerJoin(projectTable, eq(serviceTable.projectId, projectTable.id))
+    .innerJoin(environmentTable, eq(serviceTable.environmentId, environmentTable.id))
 
   const routes: CaddyRoute[] = []
   for (const service of services) {
@@ -70,8 +84,13 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
     const upstreamIp = ipByContainer.get(service.containerId)
     if (!upstreamIp) continue
 
+    const namespace = deployNamespace(service.projectSlug, service.envSlug, service.envIsDefault)
+    // Per-project base-domain override; falls back to the instance base domain.
+    const settings = (service.projectSettings ?? {}) as ProjectSettings
+    const hostDomain = settings.domain || baseDomain
+
     routes.push({
-      match: [{ host: [serviceIngressHost(service.name, service.projectSlug, baseDomain)] }],
+      match: [{ host: [serviceIngressHost(service.name, namespace, hostDomain)] }],
       handle: [
         {
           handler: 'reverse_proxy',

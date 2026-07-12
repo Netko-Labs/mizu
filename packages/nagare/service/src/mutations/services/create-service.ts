@@ -3,10 +3,12 @@ import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
 
 export const createService = async (data: ServiceInsert): Promise<Service | undefined> => {
+  // Count within the target environment so each environment's canvas lays out
+  // its own nodes independently.
   const existingServices = await db
     .select({ id: serviceTable.id })
     .from(serviceTable)
-    .where(eq(serviceTable.projectId, data.projectId))
+    .where(eq(serviceTable.environmentId, data.environmentId))
 
   const [result] = await db
     .insert(serviceTable)

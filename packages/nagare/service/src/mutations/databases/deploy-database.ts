@@ -7,15 +7,16 @@ import {
 } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { getDeployContext } from '../../queries/environments'
 import {
   createContainer,
   createVolume,
-  ensureProjectNetwork,
+  ensureDeployNetwork,
+  entityContainerName,
   execInContainer,
   MIZU_LABELS,
   pullImage,
   removeContainer,
-  sanitizeName,
   startContainer,
   stopContainer,
 } from '../../runtime'
@@ -160,6 +161,12 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
     throw new Error('Parent project not found')
   }
 
+  const deployCtx = await getDeployContext(database.environmentId)
+  if (!deployCtx) {
+    throw new Error('Environment not found')
+  }
+  const { namespace } = deployCtx
+
   const dbType = database.type as DatabaseType
 
   try {
@@ -179,8 +186,8 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
     const version = database.version || 'latest'
     await pullImage(DATABASE_IMAGES[dbType], version)
 
-    // 3. Ensure project network
-    const networkName = await ensureProjectNetwork(project.id, project.slug)
+    // 3. Ensure the environment's network
+    const networkName = await ensureDeployNetwork(namespace)
 
     // 4. Parse credentials
     let credentials: DatabaseCredentials = {
@@ -201,7 +208,7 @@ export const deployDatabase = async (databaseId: string): Promise<void> => {
     const env = { ...buildEnvVars(dbType, credentials), ...dataDir.env }
 
     // 6. Build container name + volume
-    const containerName = `mizu-${sanitizeName(project.slug)}-${sanitizeName(database.name)}`
+    const containerName = entityContainerName(namespace, database.name)
     const volumeName = `${containerName}-data`
     await createVolume(volumeName)
 

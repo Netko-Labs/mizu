@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import { index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { environmentTable } from './environments'
 import { projectTable } from './projects'
 
 /**
@@ -27,6 +28,9 @@ export const serviceTable = pgTable(
     projectId: uuid('project_id')
       .notNull()
       .references(() => projectTable.id, { onDelete: 'cascade' }),
+    environmentId: uuid('environment_id')
+      .notNull()
+      .references(() => environmentTable.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     sourceType: text('source_type', { enum: ['image', 'git', 'template'] }).notNull(),
     sourceConfig: jsonb('source_config').notNull(),
@@ -48,7 +52,10 @@ export const serviceTable = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index('service_projectId_idx').on(table.projectId)],
+  (table) => [
+    index('service_projectId_idx').on(table.projectId),
+    index('service_environmentId_idx').on(table.environmentId),
+  ],
 )
 
 /**
@@ -59,6 +66,10 @@ export const serviceRelations = relations(serviceTable, ({ one }) => ({
   project: one(projectTable, {
     fields: [serviceTable.projectId],
     references: [projectTable.id],
+  }),
+  environment: one(environmentTable, {
+    fields: [serviceTable.environmentId],
+    references: [environmentTable.id],
   }),
 }))
 

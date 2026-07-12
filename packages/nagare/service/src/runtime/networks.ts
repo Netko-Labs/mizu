@@ -5,9 +5,6 @@
  */
 
 import { createLogger } from '@mizu/logger'
-import { projectTable } from '@mizu/nagare-domain'
-import { db } from '@mizu/nagare-repository'
-import { eq } from 'drizzle-orm'
 import { runtimeCli } from './cli'
 import { MIZU_LABELS } from './constants'
 import { RuntimeError } from './types'
@@ -26,8 +23,23 @@ export function sanitizeName(name: string): string {
     .replace(/-+/g, '-')
 }
 
-function getProjectNetworkName(projectSlug: string): string {
-  return `mizu-${sanitizeName(projectSlug)}`
+/**
+ * The deploy namespace unifying a project + one of its environments. The
+ * default environment keeps the bare project slug so its container, network,
+ * and ingress-host names are unchanged; other environments get an `-{env}`
+ * suffix so their graphs are fully isolated.
+ */
+export function deployNamespace(
+  projectSlug: string,
+  envSlug: string,
+  isDefaultEnv: boolean,
+): string {
+  const project = sanitizeName(projectSlug)
+  return isDefaultEnv ? project : `${project}-${sanitizeName(envSlug)}`
+}
+
+function namespaceNetworkName(namespace: string): string {
+  return `mizu-${sanitizeName(namespace)}`
 }
 
 async function networkExists(name: string): Promise<boolean> {
@@ -54,39 +66,24 @@ export async function listNetworkNames(): Promise<string[]> {
 }
 
 /**
- * Ensure the project's network exists; stores and returns the network NAME
- * (Apple container addresses networks by name, not id).
+ * Ensure a deploy namespace's network exists; returns the network NAME (Apple
+ * container addresses networks by name, not id). Idempotent — every deploy in
+ * the same project+environment shares one network, isolated from other
+ * environments.
  */
-export async function ensureProjectNetwork(
-  projectId: string,
-  projectSlug: string,
-): Promise<string> {
-  const networkName = getProjectNetworkName(projectSlug)
-
-  const [project] = await db
-    .select({ networkId: projectTable.networkId })
-    .from(projectTable)
-    .where(eq(projectTable.id, projectId))
-
-  if (project?.networkId === networkName && (await networkExists(networkName))) {
-    return networkName
-  }
+export async function ensureDeployNetwork(namespace: string): Promise<string> {
+  const networkName = namespaceNetworkName(namespace)
 
   if (!(await networkExists(networkName))) {
     try {
       await runtimeCli(['network', 'create', '--label', `${MIZU_LABELS.managed}=true`, networkName])
-      logger.info({ projectId, networkName }, 'Created project network')
+      logger.info({ networkName }, 'Created deploy network')
     } catch (error) {
       if (!(error instanceof RuntimeError && error.code === 'ALREADY_EXISTS')) {
         throw error
       }
     }
   }
-
-  await db
-    .update(projectTable)
-    .set({ networkId: networkName })
-    .where(eq(projectTable.id, projectId))
 
   return networkName
 }

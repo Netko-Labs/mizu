@@ -1,4 +1,8 @@
-import { CreateProjectSchema, UpdateProjectSchema } from '@mizu/nagare-domain'
+import {
+  CreateProjectSchema,
+  EnvironmentScopeQuerySchema,
+  UpdateProjectSchema,
+} from '@mizu/nagare-domain'
 import {
   assertProjectOwned,
   createProject,
@@ -26,11 +30,15 @@ export const projectsRoutes = new Elysia({ name: 'projects', prefix: '/projects'
     await assertProjectOwned(params.projectId, user.organizationId)
     return getProject(params.projectId)
   })
-  // (◍•ᴗ•◍) project + its services and databases
-  .get('/:projectId/with-services', { auth: true }, async ({ user, params }) => {
-    await assertProjectOwned(params.projectId, user.organizationId)
-    return getProjectWithServices(params.projectId)
-  })
+  // (◍•ᴗ•◍) project + the services and databases of one environment
+  .get(
+    '/:projectId/with-services',
+    { auth: true, query: EnvironmentScopeQuerySchema },
+    async ({ user, params, query }) => {
+      await assertProjectOwned(params.projectId, user.organizationId)
+      return getProjectWithServices(params.projectId, query.environmentId)
+    },
+  )
   // (¬‿¬) the generated compose/env files
   .get('/:projectId/files', { auth: true }, async ({ user, params }) => {
     await assertProjectOwned(params.projectId, user.organizationId)

@@ -31,9 +31,9 @@ const DEFAULT_PORTS: Record<string, number> = {
   redis: 6379,
 }
 
-/** Deterministic container name for a deployed entity */
-export function entityContainerName(projectSlug: string, entityName: string): string {
-  return `mizu-${sanitizeName(projectSlug)}-${sanitizeName(entityName)}`
+/** Deterministic container name for a deployed entity within a deploy namespace */
+export function entityContainerName(namespace: string, entityName: string): string {
+  return `mizu-${sanitizeName(namespace)}-${sanitizeName(entityName)}`
 }
 
 /** Current IP of a container, or null when it isn't running */
@@ -79,7 +79,7 @@ function buildConnectionString(
  */
 export async function resolveConnectionEnvVars(
   serviceId: string,
-  projectSlug: string,
+  namespace: string,
 ): Promise<Record<string, string>> {
   const envVars: Record<string, string> = {}
 
@@ -114,7 +114,7 @@ export async function resolveConnectionEnvVars(
           continue
         }
 
-        const containerName = entityContainerName(projectSlug, database.name)
+        const containerName = entityContainerName(namespace, database.name)
         const host = await resolveContainerIp(database.containerId ?? containerName)
         if (!host) {
           logger.warn(
@@ -147,7 +147,7 @@ export async function resolveConnectionEnvVars(
           continue
         }
 
-        const containerName = entityContainerName(projectSlug, targetService.name)
+        const containerName = entityContainerName(namespace, targetService.name)
         const host = await resolveContainerIp(targetService.containerId ?? containerName)
         if (!host) {
           logger.warn(
