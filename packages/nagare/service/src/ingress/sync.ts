@@ -36,8 +36,16 @@ export function syncIngress(force = false): Promise<void> {
   // Serialize passes: deploy hooks and the supervisor can fire concurrently,
   // and two ensureIngress() racing a recreate trips ALREADY_EXISTS.
   const next = (inFlight ?? Promise.resolve()).then(() => doSync(force))
-  inFlight = next.finally(() => {
-    if (inFlight === next) inFlight = null
+  // The shared serialization chain must never reject: a floating rejection on
+  // `inFlight` has no catch handler and would crash the process. `link` absorbs
+  // the outcome (callers still see the real error via the returned `next`).
+  const link = next.then(
+    () => {},
+    () => {},
+  )
+  inFlight = link
+  void link.finally(() => {
+    if (inFlight === link) inFlight = null
   })
   return next
 }
