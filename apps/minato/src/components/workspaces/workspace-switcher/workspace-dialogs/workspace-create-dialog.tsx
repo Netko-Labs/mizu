@@ -26,15 +26,15 @@ export function WorkspaceCreateDialog({
       <DialogContent className="border-neutral-800 bg-neutral-950 font-mono sm:max-w-md">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle className="font-mono text-neutral-200">Create Workspace</DialogTitle>
+            <DialogTitle className="font-mono text-neutral-200">Create Team</DialogTitle>
             <DialogDescription className="font-mono text-neutral-500">
-              Workspaces keep related projects grouped and organized.
+              Teams keep related projects grouped and isolated from other tenants.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="create-workspace-name">Workspace name</FieldLabel>
+                <FieldLabel htmlFor="create-workspace-name">Team name</FieldLabel>
                 <Input
                   id="create-workspace-name"
                   value={name}

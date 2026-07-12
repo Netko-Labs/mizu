@@ -1,69 +1,54 @@
 'use client'
 
-import type { Workspace } from '@mizu/nagare-domain'
-import { useQuery } from '@tanstack/react-query'
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { type Serialized, workspaceQueries } from '@/shared/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { createContext, useContext, useMemo } from 'react'
+import { authClient, organization } from '@/integrations/auth'
+import { projectKeys } from '@/shared/api'
+
+// A team is a better-auth organization. We keep the `workspace` vocabulary in
+// this provider's public surface so the many consumers stay untouched, but the
+// data now comes from better-auth's org plugin — the active team lives in the
+// session (`activeOrganizationId`), not localStorage.
+export interface Team {
+  id: string
+  name: string
+  slug: string
+}
 
 interface WorkspaceContextValue {
-  workspaces: Serialized<Workspace>[]
+  workspaces: Team[]
   currentWorkspaceId: string | null
-  currentWorkspace: Serialized<Workspace> | null
-  setCurrentWorkspaceId: (workspaceId: string) => void
+  currentWorkspace: Team | null
+  setCurrentWorkspaceId: (organizationId: string) => void
   isLoading: boolean
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 
-const STORAGE_KEY = 'mizu.currentWorkspaceId'
-
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading } = useQuery(workspaceQueries.list())
-  const workspaces = data ?? []
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const { data: teams, isPending: teamsPending } = authClient.useListOrganizations()
+  const { data: activeTeam, isPending: activePending } = authClient.useActiveOrganization()
 
-  useEffect(() => {
-    if (workspaces.length === 0) {
-      setCurrentWorkspaceId(null)
-      return
-    }
+  const value = useMemo<WorkspaceContextValue>(() => {
+    const workspaces = (teams ?? []) as Team[]
+    const currentWorkspace = (activeTeam as Team | null) ?? null
 
-    const storedId = window.localStorage.getItem(STORAGE_KEY)
-    const hasStored = storedId && workspaces.some((workspace) => workspace.id === storedId)
-
-    if (hasStored) {
-      setCurrentWorkspaceId(storedId)
-      return
-    }
-
-    setCurrentWorkspaceId((previous) => {
-      if (previous && workspaces.some((workspace) => workspace.id === previous)) {
-        return previous
-      }
-      return workspaces[0].id
-    })
-  }, [workspaces])
-
-  useEffect(() => {
-    if (!currentWorkspaceId) return
-    window.localStorage.setItem(STORAGE_KEY, currentWorkspaceId)
-  }, [currentWorkspaceId])
-
-  const currentWorkspace = useMemo(() => {
-    if (!currentWorkspaceId) return null
-    return workspaces.find((workspace) => workspace.id === currentWorkspaceId) ?? null
-  }, [workspaces, currentWorkspaceId])
-
-  const value = useMemo<WorkspaceContextValue>(
-    () => ({
+    return {
       workspaces,
-      currentWorkspaceId,
+      currentWorkspaceId: currentWorkspace?.id ?? null,
       currentWorkspace,
-      setCurrentWorkspaceId,
-      isLoading,
-    }),
-    [workspaces, currentWorkspaceId, currentWorkspace, isLoading],
-  )
+      // Switching the active team persists to the session; the per-request JWT
+      // mint then carries the new org to nagare. Invalidate project caches so
+      // they refetch under the new tenant.
+      setCurrentWorkspaceId: (organizationId: string) => {
+        void organization
+          .setActive({ organizationId })
+          .then(() => queryClient.invalidateQueries({ queryKey: projectKeys.all }))
+      },
+      isLoading: teamsPending || activePending,
+    }
+  }, [teams, activeTeam, teamsPending, activePending, queryClient])
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }

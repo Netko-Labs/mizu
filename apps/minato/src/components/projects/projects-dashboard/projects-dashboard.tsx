@@ -33,14 +33,14 @@ export function ProjectsDashboard() {
               onSearchChange={setSearchQuery}
               showToolbar={false}
             />
-            <TerminalCard title="workspace.required" delay={0.1}>
+            <TerminalCard title="team.required" delay={0.1}>
               <div className="py-6 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-neutral-800 bg-black">
                   <IconFolder className="h-6 w-6 text-neutral-700" />
                 </div>
-                <div className="mb-1 text-xs text-neutral-400">no workspace selected</div>
+                <div className="mb-1 text-xs text-neutral-400">no team selected</div>
                 <div className="text-[10px] text-neutral-600">
-                  $ use the sidebar to create or select a workspace
+                  $ use the sidebar to create or select a team
                 </div>
               </div>
             </TerminalCard>

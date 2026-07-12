@@ -27,7 +27,7 @@ export function WorkspaceRenameDialog({
       <DialogContent className="border-neutral-800 bg-neutral-950 font-mono sm:max-w-md">
         <form onSubmit={onSubmit}>
           <DialogHeader>
-            <DialogTitle className="font-mono text-neutral-200">Rename Workspace</DialogTitle>
+            <DialogTitle className="font-mono text-neutral-200">Rename Team</DialogTitle>
             <DialogDescription className="font-mono text-neutral-500">
               Update the name for <span className="text-neutral-300">{targetName}</span>.
             </DialogDescription>

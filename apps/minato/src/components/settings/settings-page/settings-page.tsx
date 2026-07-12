@@ -6,6 +6,7 @@ import { SETTINGS_TABS, useInstanceSettingsForm } from './lib'
 import { SettingsAccessTab } from './settings-access-tab'
 import { SettingsIngressTab } from './settings-ingress-tab'
 import { SettingsInstanceTab } from './settings-instance-tab'
+import { SettingsTeamTab } from './settings-team-tab'
 
 export function SettingsPage() {
   const { form, feedback, stats, isDirty, isLoadingSettings, isSaving, updateField, handleSave } =
@@ -113,6 +114,7 @@ export function SettingsPage() {
             <SettingsIngressTab form={form} updateField={updateField} stats={stats} />
           )}
           {activeTab === 'access' && <SettingsAccessTab form={form} updateField={updateField} />}
+          {activeTab === 'team' && <SettingsTeamTab />}
         </motion.div>
       </div>
     </div>

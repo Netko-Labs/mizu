@@ -1,6 +1,5 @@
-import type { Workspace } from '@mizu/nagare-domain'
 import type { FormEvent } from 'react'
-import type { Serialized } from '@/shared/api'
+import type { Team } from '@/components/core/workspace'
 
 export interface WorkspaceSwitcherProps {
   collapsed?: boolean
@@ -8,7 +7,7 @@ export interface WorkspaceSwitcherProps {
 
 export type ActiveDialog = 'create' | 'edit' | 'delete' | null
 
-export type SwitcherWorkspace = Serialized<Workspace>
+export type SwitcherWorkspace = Team
 
 export interface UseWorkspaceCrudResult {
   activeDialog: ActiveDialog

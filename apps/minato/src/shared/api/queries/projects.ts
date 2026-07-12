@@ -12,32 +12,32 @@ import { unwrap } from '../utils'
 // eden types drizzle timestamps as Date, but JSON delivers ISO strings —
 // Serialized<> is the honest wire type (see ../types.ts).
 
+// Projects are scoped server-side by the JWT's active organization; the team id
+// is carried only in the query keys so switching teams refetches under the new
+// tenant (see WorkspaceProvider.setCurrentWorkspaceId).
 export const projectKeys = {
   all: ['projects'] as const,
-  list: (workspaceId: string) => ['projects', 'list', workspaceId] as const,
-  bySlug: (workspaceId: string, slug: string) =>
-    ['projects', 'by-slug', workspaceId, slug] as const,
+  list: (teamId: string) => ['projects', 'list', teamId] as const,
+  bySlug: (teamId: string, slug: string) => ['projects', 'by-slug', teamId, slug] as const,
   byId: (projectId: string) => ['projects', projectId] as const,
   withServices: (projectId: string) => ['projects', projectId, 'with-services'] as const,
   generatedFiles: (projectId: string) => ['projects', projectId, 'generated-files'] as const,
 }
 
 export const projectQueries = {
-  list: (workspaceId: string) =>
+  list: (teamId: string) =>
     queryOptions({
-      queryKey: projectKeys.list(workspaceId),
+      queryKey: projectKeys.list(teamId),
       queryFn: async () =>
-        (await unwrap(
-          nagare.projects.get({ query: { workspaceId } }),
-        )) as unknown as Serialized<Project>[],
+        (await unwrap(nagare.projects.get())) as unknown as Serialized<Project>[],
     }),
-  bySlug: (workspaceId: string, slug: string) =>
+  bySlug: (teamId: string, slug: string) =>
     queryOptions({
-      queryKey: projectKeys.bySlug(workspaceId, slug),
+      queryKey: projectKeys.bySlug(teamId, slug),
       queryFn: async () =>
-        (await unwrap(
-          nagare.projects['by-slug']({ slug }).get({ query: { workspaceId } }),
-        )) as unknown as Serialized<Project> | undefined,
+        (await unwrap(nagare.projects['by-slug']({ slug }).get())) as unknown as
+          | Serialized<Project>
+          | undefined,
     }),
   byId: (projectId: string) =>
     queryOptions({

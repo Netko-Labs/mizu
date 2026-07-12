@@ -62,7 +62,6 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
     createMutation.mutate({
       name: name.trim(),
       description: description.trim() || undefined,
-      workspaceId: currentWorkspace.id,
     })
   }
 

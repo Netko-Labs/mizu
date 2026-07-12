@@ -10,7 +10,7 @@ export function DashboardStatline({ workspaceName, projectCount }: DashboardStat
       className="mb-5 flex items-center gap-8 text-[11px]"
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="shrink-0 text-neutral-600">workspace</span>
+        <span className="shrink-0 text-neutral-600">team</span>
         <span aria-hidden className="min-w-4 flex-1 border-b border-dotted border-neutral-800" />
         <span className="truncate text-neutral-400">{workspaceName}</span>
       </div>

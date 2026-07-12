@@ -32,8 +32,8 @@ export function HomeRecentProjects({ projects, isLoading, hasWorkspace }: HomeRe
         </div>
       ) : !hasWorkspace ? (
         <div className="py-8 text-center">
-          <div className="mb-2 text-xs text-yellow-500">! no workspace selected</div>
-          <div className="text-[10px] text-neutral-600">$ workspace --select</div>
+          <div className="mb-2 text-xs text-yellow-500">! no team selected</div>
+          <div className="text-[10px] text-neutral-600">$ team --select</div>
         </div>
       ) : projects.length === 0 ? (
         <div className="py-8 text-center">

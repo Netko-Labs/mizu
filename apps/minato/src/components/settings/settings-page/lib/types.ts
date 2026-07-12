@@ -17,7 +17,7 @@ export interface SettingsFeedback {
   message: string
 }
 
-export type SettingsTab = 'instance' | 'ingress' | 'access'
+export type SettingsTab = 'instance' | 'ingress' | 'access' | 'team'
 
 export interface SettingsTabDefinition {
   id: SettingsTab

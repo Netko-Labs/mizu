@@ -83,9 +83,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
             className={cn('shrink-0', collapsed ? 'size-4' : 'size-3 text-neutral-600')}
             strokeWidth={1.5}
           />
-          {!collapsed && (
-            <span className="truncate">{isCreating ? 'creating...' : 'workspace'}</span>
-          )}
+          {!collapsed && <span className="truncate">{isCreating ? 'creating...' : 'team'}</span>}
         </button>
         {createDialog}
       </>
@@ -98,7 +96,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          aria-label={collapsed ? `Workspace: ${currentWorkspace.name}` : undefined}
+          aria-label={collapsed ? `Team: ${currentWorkspace.name}` : undefined}
           className={cn(
             'group/switcher flex items-center font-mono outline-none transition-colors duration-200',
             'focus-visible:ring-2 focus-visible:ring-blue-500/40',
@@ -134,7 +132,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
         >
           {/* Header */}
           <div className="border-b border-neutral-800 px-3 py-2">
-            <p className="text-[10px] text-neutral-600"># workspaces</p>
+            <p className="text-[10px] text-neutral-600"># teams</p>
           </div>
 
           {/* Workspace list */}
@@ -178,7 +176,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-neutral-500 focus:bg-neutral-950 focus:text-neutral-300"
             >
               <IconPencil className="size-3" />
-              <span>rename workspace</span>
+              <span>rename team</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -186,7 +184,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-neutral-500 focus:bg-neutral-950 focus:text-neutral-300"
             >
               <IconPlus className="size-3" />
-              <span>new workspace</span>
+              <span>new team</span>
             </DropdownMenuItem>
 
             {workspaces.length > 1 && (
@@ -195,7 +193,7 @@ export function WorkspaceSwitcher({ collapsed }: WorkspaceSwitcherProps) {
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-red-500/70 focus:bg-red-500/10 focus:text-red-400"
               >
                 <IconTrash className="size-3" />
-                <span>delete workspace</span>
+                <span>delete team</span>
               </DropdownMenuItem>
             )}
           </div>

@@ -1,11 +1,29 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { useWorkspace } from '@/components/core/workspace'
-import { createWorkspace, deleteWorkspace, updateWorkspace, workspaceKeys } from '@/shared/api'
+import { organization } from '@/integrations/auth'
 import type { ActiveDialog, UseWorkspaceCrudResult } from '../types'
 
+// A url-safe, reasonably-unique slug for a new team (better-auth requires one).
+function slugify(name: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `${base || 'team'}-${crypto.randomUUID().slice(0, 8)}`
+}
+
+// better-auth client methods resolve to `{ data, error }` rather than throwing;
+// await + unwrap so react-query sees a rejected promise on failure.
+async function unwrapAuth<T>(
+  call: Promise<{ data: T | null; error: { message?: string } | null }>,
+): Promise<T | null> {
+  const { data, error } = await call
+  if (error) throw new Error(error.message ?? 'request failed')
+  return data
+}
+
 export function useWorkspaceCrud(): UseWorkspaceCrudResult {
-  const queryClient = useQueryClient()
   const [activeDialog, setActiveDialog] = useState<ActiveDialog>(null)
   const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(null)
   const [name, setName] = useState('')
@@ -16,11 +34,17 @@ export function useWorkspaceCrud(): UseWorkspaceCrudResult {
   const targetWorkspace =
     (targetWorkspaceId ? workspaces.find((w) => w.id === targetWorkspaceId) : null) ?? null
 
-  const invalidateList = () => queryClient.invalidateQueries({ queryKey: workspaceKeys.all })
-
-  const createMutation = useMutation({ mutationFn: createWorkspace, onSuccess: invalidateList })
-  const updateMutation = useMutation({ mutationFn: updateWorkspace, onSuccess: invalidateList })
-  const deleteMutation = useMutation({ mutationFn: deleteWorkspace, onSuccess: invalidateList })
+  const createMutation = useMutation({
+    mutationFn: (teamName: string) =>
+      unwrapAuth(organization.create({ name: teamName, slug: slugify(teamName) })),
+  })
+  const updateMutation = useMutation({
+    mutationFn: ({ organizationId, teamName }: { organizationId: string; teamName: string }) =>
+      unwrapAuth(organization.update({ organizationId, data: { name: teamName } })),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (organizationId: string) => unwrapAuth(organization.delete({ organizationId })),
+  })
 
   // --- Dialog helpers ---
 
@@ -57,8 +81,8 @@ export function useWorkspaceCrud(): UseWorkspaceCrudResult {
     e.preventDefault()
     if (!name.trim()) return
     try {
-      const workspace = await createMutation.mutateAsync({ name: name.trim() })
-      setCurrentWorkspaceId(workspace.id)
+      const team = await createMutation.mutateAsync(name.trim())
+      if (team) setCurrentWorkspaceId(team.id)
       closeDialog()
     } catch {
       // error shown via mutation state
@@ -69,7 +93,7 @@ export function useWorkspaceCrud(): UseWorkspaceCrudResult {
     e.preventDefault()
     if (!name.trim() || !targetWorkspaceId) return
     try {
-      await updateMutation.mutateAsync({ workspaceId: targetWorkspaceId, name: name.trim() })
+      await updateMutation.mutateAsync({ organizationId: targetWorkspaceId, teamName: name.trim() })
       closeDialog()
     } catch {
       // error shown via mutation state

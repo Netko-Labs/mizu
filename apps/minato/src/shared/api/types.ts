@@ -3,7 +3,6 @@ import type {
   CreateDatabaseInput,
   CreateProjectInput,
   CreateServiceInput,
-  CreateWorkspaceInput,
   Database,
   PositionInput,
   Project,
@@ -11,7 +10,6 @@ import type {
   UpdateDatabaseInput,
   UpdateProjectInput,
   UpdateServiceInput,
-  UpdateWorkspaceInput,
 } from '@mizu/nagare-domain'
 
 /**
@@ -36,11 +34,7 @@ export interface ProjectWithServices extends Project {
   databases: Database[]
 }
 
-export type { CreateConnectionInput, CreateProjectInput, CreateWorkspaceInput }
-
-export interface UpdateWorkspaceParams extends UpdateWorkspaceInput {
-  workspaceId: string
-}
+export type { CreateConnectionInput, CreateProjectInput }
 
 export interface UpdateProjectParams extends UpdateProjectInput {
   projectId: string

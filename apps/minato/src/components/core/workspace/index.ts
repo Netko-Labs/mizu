@@ -1,1 +1,1 @@
-export { useWorkspace, WorkspaceProvider } from './workspace-provider'
+export { type Team, useWorkspace, WorkspaceProvider } from './workspace-provider'

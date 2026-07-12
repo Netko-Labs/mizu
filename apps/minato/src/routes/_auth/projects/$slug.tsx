@@ -17,7 +17,7 @@ function ProjectDetailPage() {
   })
 
   if (!currentWorkspace) {
-    return <CanvasGuard code="WORKSPACE_REQUIRED" message="workspace required" />
+    return <CanvasGuard code="TEAM_REQUIRED" message="team required" />
   }
 
   if (!project && !isLoading) {

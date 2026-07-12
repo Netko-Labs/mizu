@@ -33,7 +33,7 @@ export function WorkspaceDeleteDialog({
           <div className="mb-3 flex size-10 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5">
             <IconAlertTriangle className="size-5 text-red-500" />
           </div>
-          <DialogTitle className="font-mono text-neutral-200">Delete Workspace</DialogTitle>
+          <DialogTitle className="font-mono text-neutral-200">Delete Team</DialogTitle>
           <DialogDescription className="font-mono text-neutral-500">
             This will permanently destroy{' '}
             <span className="font-medium text-neutral-200">{deleteTargetName}</span> and
@@ -45,7 +45,7 @@ export function WorkspaceDeleteDialog({
           <div className="rounded-lg border border-red-500/10 bg-red-500/5 px-3 py-2.5">
             <p className="text-[11px] leading-relaxed text-red-400/80">
               <span className="text-red-500">▸</span> This action is irreversible. All data
-              associated with this workspace will be permanently removed.
+              associated with this team will be permanently removed.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export function WorkspaceDeleteDialog({
                 deleting...
               </span>
             ) : (
-              'delete workspace'
+              'delete team'
             )}
           </Button>
         </DialogFooter>

@@ -16,4 +16,5 @@ export const SETTINGS_TABS: SettingsTabDefinition[] = [
   { id: 'instance', label: 'instance' },
   { id: 'ingress', label: 'ingress' },
   { id: 'access', label: 'access' },
+  { id: 'team', label: 'team' },
 ]
