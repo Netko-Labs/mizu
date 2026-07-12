@@ -13,7 +13,3 @@ export interface NavItemProps {
   title: string
   cmd: string
 }
-
-export interface MizuBrandProps {
-  collapsed: boolean
-}

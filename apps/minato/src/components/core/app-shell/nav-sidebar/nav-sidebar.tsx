@@ -1,4 +1,4 @@
-import { IconCommand } from '@tabler/icons-react'
+import { IconChevronsLeft, IconCommand } from '@tabler/icons-react'
 import { useCommandPalette } from '@/components/command-palette'
 import {
   Sidebar,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar'
 import { WorkspaceSwitcher } from '@/components/workspaces/workspace-switcher'
 import { cn } from '@/lib/utils'
-import { FOOTER_NAVIGATION_ITEMS, NAVIGATION_ITEMS } from './lib'
+import { NAVIGATION_ITEMS } from './lib'
 import { MizuBrand } from './nav-sidebar-brand'
 import { NavItem } from './nav-sidebar-item'
 import { UserMenu } from './nav-sidebar-user-menu'
@@ -48,7 +48,7 @@ function CommandPaletteButton() {
 }
 
 export function NavSidebar() {
-  const { state } = useSidebar()
+  const { state, toggleSidebar } = useSidebar()
   const collapsed = state === 'collapsed'
 
   return (
@@ -58,13 +58,25 @@ export function NavSidebar() {
       className="border-r border-neutral-800 bg-black font-mono"
     >
       <SidebarHeader
-        className={cn(
-          'border-b border-neutral-800/60',
-          collapsed ? 'gap-1 px-1 py-2' : 'gap-0 p-0',
-        )}
+        className={cn('border-b border-neutral-800/60', collapsed ? 'px-1 py-2' : 'p-0')}
       >
-        <MizuBrand collapsed={collapsed} />
-        <WorkspaceSwitcher collapsed={collapsed} />
+        {collapsed ? (
+          <WorkspaceSwitcher collapsed />
+        ) : (
+          <div className="flex h-11 items-center gap-1.5 px-3 font-mono">
+            <MizuBrand />
+            <span className="text-xs leading-none text-neutral-700">/</span>
+            <WorkspaceSwitcher collapsed={false} />
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Collapse sidebar"
+              className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-md text-neutral-700 outline-none transition-colors hover:bg-neutral-900 hover:text-neutral-400 focus-visible:ring-2 focus-visible:ring-blue-500/40"
+            >
+              <IconChevronsLeft className="size-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
@@ -80,14 +92,7 @@ export function NavSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter
-        className={cn('border-t border-neutral-800/60', collapsed ? 'gap-1 p-1' : 'gap-1 p-2')}
-      >
-        <SidebarMenu className="gap-0.5">
-          {FOOTER_NAVIGATION_ITEMS.map((item) => (
-            <NavItem key={item.to} {...item} />
-          ))}
-        </SidebarMenu>
+      <SidebarFooter className={cn('border-t border-neutral-800/60', collapsed ? 'p-1' : 'p-0')}>
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
