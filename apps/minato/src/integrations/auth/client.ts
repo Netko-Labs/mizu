@@ -1,4 +1,4 @@
-import { magicLinkClient } from 'better-auth/client/plugins'
+import { magicLinkClient, organizationClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 
 // Get base URL - for client use window.location.origin, for SSR use env or default
@@ -12,7 +12,7 @@ function getBaseURL() {
 
 export const authClient = createAuthClient({
   baseURL: getBaseURL(),
-  plugins: [magicLinkClient()],
+  plugins: [magicLinkClient(), organizationClient()],
 })
 
-export const { signIn, signOut, signUp, useSession, getSession } = authClient
+export const { signIn, signOut, signUp, useSession, getSession, organization } = authClient

@@ -37,6 +37,9 @@ export const session = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    // The team the session is currently acting as (better-auth org plugin);
+    // this id rides the JWT so nagare scopes every query to it.
+    activeOrganizationId: text('active_organization_id'),
   },
   (table) => [index('session_userId_idx').on(table.userId)],
 )
