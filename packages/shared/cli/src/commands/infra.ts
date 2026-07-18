@@ -56,8 +56,10 @@ export async function infraUp(args: string[]) {
       '--detach',
       '--name',
       DB_CONTAINER,
-      '--publish',
-      `${DB_PORT}:5432`,
+      // On macOS 26.1+, Apple `container` published-port forwarding is broken
+      // (apple/container#919); the mizu host-forwarder binds these ports
+      // instead, so skip the container publish to leave them free.
+      ...(process.env.MIZU_HOST_FORWARD ? [] : ['--publish', `${DB_PORT}:5432`]),
       '--env',
       'POSTGRES_USER=postgres',
       '--env',

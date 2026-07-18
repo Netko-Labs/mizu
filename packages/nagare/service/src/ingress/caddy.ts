@@ -62,16 +62,25 @@ async function createIngressContainer(networks: string[]): Promise<void> {
   await pullImage(CADDY_IMAGE)
   await createVolume(INGRESS_VOLUME)
 
+  // On macOS 26.1+, Apple `container` published-port forwarding is broken
+  // (apple/container#919); the mizu host-forwarder binds these ports instead,
+  // so skip the container publish to leave them free for it.
+  const publishFlags = process.env.MIZU_HOST_FORWARD
+    ? []
+    : [
+        '-p',
+        `${INGRESS_HTTP_PORT}:${INGRESS_HTTP_PORT}`,
+        '-p',
+        '443:443',
+        '-p',
+        `127.0.0.1:${INGRESS_ADMIN_PORT}:${INGRESS_ADMIN_PORT}`,
+      ]
+
   const args = [
     'create',
     '--name',
     INGRESS_CONTAINER,
-    '-p',
-    `${INGRESS_HTTP_PORT}:${INGRESS_HTTP_PORT}`,
-    '-p',
-    '443:443',
-    '-p',
-    `127.0.0.1:${INGRESS_ADMIN_PORT}:${INGRESS_ADMIN_PORT}`,
+    ...publishFlags,
     // Caddy honors CADDY_ADMIN when no config file overrides it — this makes
     // the admin API reachable through the published port.
     '-e',
