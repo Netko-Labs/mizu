@@ -6,6 +6,8 @@ export const NagareConfigSchema = z.object({
     port: z.number().default(3001),
     cors: z.array(z.string()).default(['http://localhost:3000']),
     webBaseUrl: z.string().url(),
+    /** Where nagare fetches minato's JWKS (internal; defaults to webBaseUrl). */
+    authJwksUrl: z.string().url(),
     encryptionKey: z.string(),
   }),
   db: z.object({

@@ -2,7 +2,10 @@ import { nagareEnvConfig } from '@mizu/nagare-config'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 
 const WEB = nagareEnvConfig.app.webBaseUrl
-const jwks = createRemoteJWKSet(new URL('/api/auth/jwks', WEB))
+// Fetch keys directly from minato (authJwksUrl), but still validate the token's
+// issuer/audience against the public WEB origin. Keeps this internal call off
+// the public ingress path (which isn't routable at first-run).
+const jwks = createRemoteJWKSet(new URL('/api/auth/jwks', nagareEnvConfig.app.authJwksUrl))
 
 export type TeamRole = 'owner' | 'admin' | 'member'
 
