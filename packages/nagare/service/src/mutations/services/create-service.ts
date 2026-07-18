@@ -23,7 +23,12 @@ function resolveTemplate(data: ServiceInsert): ServiceInsert {
   return {
     ...data,
     sourceType: 'image',
-    sourceConfig: { ...template.sourceConfig },
+    // Carry configFiles onto the stored image sourceConfig so deploy can seed
+    // and bind-mount them (the image needs them to boot).
+    sourceConfig: {
+      ...template.sourceConfig,
+      ...(template.configFiles ? { configFiles: template.configFiles } : {}),
+    },
     ports:
       Array.isArray(data.ports) && data.ports.length ? data.ports : (template.defaultPorts ?? []),
     envVars:

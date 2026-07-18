@@ -34,5 +34,18 @@ export const serviceTemplates: ServiceTemplate[] = [
       { container: 51121 },
       { container: 11451 },
     ],
+    // CLIProxyAPI won't boot without a config file. Seed a minimal one so the
+    // API comes up on 8317; add provider logins from the running service.
+    configFiles: [
+      {
+        path: '/CLIProxyAPI/config.yaml',
+        content: [
+          '# Managed by Mizu — CLIProxyAPI base config.',
+          '# Add providers via the CLIProxyAPI login flows once running.',
+          'port: 8317',
+          '',
+        ].join('\n'),
+      },
+    ],
   },
 ]

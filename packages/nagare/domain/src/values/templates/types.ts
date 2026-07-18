@@ -16,6 +16,12 @@ export interface ServiceTemplate {
   }
   defaultEnvVars?: Record<string, string>
   defaultPorts?: Array<{ container: number; host?: number; protocol?: 'tcp' | 'udp' }>
+  /**
+   * Config files the image needs at startup. mizu writes each `content` to a
+   * host file and bind-mounts it at `path` in the container — for images (like
+   * CLIProxyAPI) that require a config file and won't boot without one.
+   */
+  configFiles?: Array<{ path: string; content: string }>
   healthCheck?: {
     test: string[]
     interval: string

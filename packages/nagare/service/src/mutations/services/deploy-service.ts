@@ -1,7 +1,9 @@
+import { basename, join } from 'node:path'
 import { createLogger } from '@mizu/logger'
 import { type ImageSourceConfig, projectTable, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { ensureDir, getMizuHome, writeFileAtomic } from '../../filesystem'
 import { syncIngressSafe } from '../../ingress'
 import { getDeployContext } from '../../queries/environments'
 import {
@@ -121,6 +123,22 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     const ports =
       (service.ports as Array<{ container: number; host?: number; protocol?: string }>) || []
 
+    // Seed any template config files onto the host and bind-mount them — some
+    // images (e.g. CLIProxyAPI) won't boot without a config file.
+    const configFiles =
+      (service.sourceConfig as { configFiles?: Array<{ path: string; content: string }> })
+        .configFiles ?? []
+    const volumes: Array<{ source: string; target: string }> = []
+    if (configFiles.length) {
+      const dir = join(getMizuHome(), 'services', serviceId)
+      await ensureDir(dir)
+      for (const file of configFiles) {
+        const hostPath = join(dir, basename(file.path))
+        await writeFileAtomic(hostPath, file.content)
+        volumes.push({ source: hostPath, target: file.path })
+      }
+    }
+
     const containerId = await createContainer({
       name: containerName,
       image: `${sourceConfig.image}:${imageTag}`,
@@ -130,6 +148,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
         hostPort: p.host,
         protocol: (p.protocol as 'tcp' | 'udp') || 'tcp',
       })),
+      volumes,
       network: networkName,
       labels: {
         [MIZU_LABELS.managed]: 'true',
