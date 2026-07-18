@@ -12,6 +12,13 @@ export default defineConfig({
     host: true,
     allowedHosts: true,
   },
+  // Production serve (`vite preview`) is served through the same caddy ingress,
+  // so it needs the same proxied-Host acceptance as the dev server.
+  preview: {
+    port: 3000,
+    host: true,
+    allowedHosts: true,
+  },
   plugins: [
     tsConfigPaths({
       projects: ['./tsconfig.json'],
