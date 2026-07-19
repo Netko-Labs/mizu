@@ -13,6 +13,7 @@ import {
   deployService,
   getService,
   getServiceEnvVars,
+  getServiceMetrics,
   getServiceStatus,
   listServices,
   resolveEnvironmentId,
@@ -44,6 +45,11 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
   .get('/:serviceId/status', { auth: true }, async ({ user, params }) => {
     await assertServiceOwned(params.serviceId, user.organizationId)
     return getServiceStatus(params.serviceId)
+  })
+  // 📈 ~1h CPU/mem window from the in-memory sampler
+  .get('/:serviceId/metrics', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return getServiceMetrics(params.serviceId)
   })
   // ✨(っ◔◡◔)っ a new service (in a project the team owns, in the given
   // environment or the project's default)

@@ -21,6 +21,12 @@ export {
 } from './env-resolution'
 export { pullImage, qualifyImageRef } from './images'
 export { deployNamespace, ensureDeployNetwork, listNetworkNames, sanitizeName } from './networks'
+export {
+  type ProcSample,
+  parseProcSample,
+  readContainerProcSample,
+  supportsStatsCommand,
+} from './stats'
 export { ensureRuntimeRunning, getRuntimeInfo, isRuntimeAvailable } from './system'
 export * from './types'
 export { createVolume } from './volumes'
