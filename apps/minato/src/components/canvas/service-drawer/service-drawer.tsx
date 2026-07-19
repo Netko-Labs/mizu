@@ -1,9 +1,11 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DeploymentsTab } from './deployments-tab'
 import { type DrawerTab, type ServiceDrawerProps, TAB_DEFINITIONS, useServiceDrawer } from './lib'
 import { DatabaseOverview, OverviewTab } from './overview-tab'
 import { ServiceDrawerHeader } from './service-drawer-header'
 import { SettingsTab } from './settings-tab'
+import { VariablesTab } from './variables-tab'
 
 /**
  * The Railway-style service drawer: a wide, non-modal tabbed panel floating
@@ -59,6 +61,20 @@ export function ServiceDrawer({
             ) : null}
           </ScrollArea>
         </TabsContent>
+
+        {nodeType === 'service' && service && (
+          <TabsContent value="deployments" className="min-h-0">
+            <ScrollArea className="h-full">
+              <DeploymentsTab service={service} />
+            </ScrollArea>
+          </TabsContent>
+        )}
+
+        {nodeType === 'service' && service && (
+          <TabsContent value="variables" className="min-h-0">
+            <VariablesTab service={service} onAction={onAction} />
+          </TabsContent>
+        )}
 
         <TabsContent value="settings" className="min-h-0">
           <ScrollArea className="h-full">

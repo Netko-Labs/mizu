@@ -22,14 +22,14 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
     label: 'Deployments',
     icon: IconHistory,
     appliesTo: ['service'],
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'variables',
     label: 'Variables',
     icon: IconVariable,
     appliesTo: ['service'],
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'metrics',
