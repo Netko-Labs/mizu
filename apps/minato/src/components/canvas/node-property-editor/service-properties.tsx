@@ -41,6 +41,10 @@ export function ServiceProperties({
   const ingressRules =
     ((service.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
   const volumes = (service.volumeMounts ?? []) as VolumeMount[]
+  // Template-declared persistent dirs (e.g. CLIProxyAPI auth/plugins) — mizu
+  // backs each with a host dir and bind-mounts it. Stored on sourceConfig, not
+  // the volumeMounts table.
+  const persistentVolumes = (sourceConfig.volumes as string[] | undefined) ?? []
 
   const getSourceInfo = (): string => {
     switch (sourceType) {
@@ -164,10 +168,21 @@ export function ServiceProperties({
       {/* Volumes */}
       <div>
         <SectionHeader title="volumes" />
-        {volumes.length === 0 ? (
+        {volumes.length === 0 && persistentVolumes.length === 0 ? (
           <div className="text-[10px] text-neutral-700">no volumes mounted</div>
         ) : (
           <div className="space-y-1">
+            {persistentVolumes.map((path) => (
+              <div
+                key={path}
+                className="flex items-center gap-2 rounded border border-neutral-800 bg-neutral-950 px-2 py-1 font-mono text-[11px] text-neutral-400"
+              >
+                <span className="truncate">{path}</span>
+                <span className="ml-auto shrink-0 text-[9px] uppercase text-neutral-600">
+                  persisted
+                </span>
+              </div>
+            ))}
             {volumes.map((vol, i) => (
               <div
                 key={i}
