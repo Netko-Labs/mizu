@@ -22,6 +22,7 @@ import {
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
+import { logDatabaseActivity } from '../shared/activity'
 
 export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databases' })
   .use(authPlugin)
@@ -51,21 +52,25 @@ export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databas
   .post('/', { auth: true, body: CreateDatabaseSchema }, async ({ user, body }) => {
     await assertProjectOwned(body.projectId, user.organizationId)
     const environmentId = await resolveEnvironmentId(body.projectId, body.environmentId)
-    return createDatabase({
+    const created = await createDatabase({
       projectId: body.projectId,
       environmentId,
       type: body.type,
       name: body.name,
       version: body.version,
     })
+    if (created) logDatabaseActivity(created, user, 'database.create')
+    return created
   })
   // (๑˃ᴗ˂)ﻭ tweak a database
   .patch(
     '/:databaseId',
     { auth: true, body: UpdateDatabaseSchema },
     async ({ user, params, body }) => {
-      await assertDatabaseOwned(params.databaseId, user.organizationId)
-      return updateDatabase(params.databaseId, body)
+      const database = await assertDatabaseOwned(params.databaseId, user.organizationId)
+      const result = await updateDatabase(params.databaseId, body)
+      logDatabaseActivity(database, user, 'database.update', { fields: Object.keys(body) })
+      return result
     },
   )
   // ⇢ nudge the node on the canvas
@@ -79,21 +84,26 @@ export const databasesRoutes = new Elysia({ name: 'databases', prefix: '/databas
   )
   // (ノ﹏ヽ) delete a database
   .delete('/:databaseId', { auth: true }, async ({ user, params }) => {
-    await assertDatabaseOwned(params.databaseId, user.organizationId)
-    return deleteDatabase(params.databaseId)
+    const database = await assertDatabaseOwned(params.databaseId, user.organizationId)
+    const result = await deleteDatabase(params.databaseId)
+    logDatabaseActivity(database, user, 'database.delete')
+    return result
   })
   // 🚀 provision + start
   .post('/:databaseId/deploy', { auth: true }, async ({ user, params }) => {
-    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    const database = await assertDatabaseOwned(params.databaseId, user.organizationId)
+    logDatabaseActivity(database, user, 'database.deploy')
     return deployDatabase(params.databaseId)
   })
   // ▶ start the container
   .post('/:databaseId/start', { auth: true }, async ({ user, params }) => {
-    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    const database = await assertDatabaseOwned(params.databaseId, user.organizationId)
+    logDatabaseActivity(database, user, 'database.start')
     return startDatabase(params.databaseId)
   })
   // ⏹ stop the container
   .post('/:databaseId/stop', { auth: true }, async ({ user, params }) => {
-    await assertDatabaseOwned(params.databaseId, user.organizationId)
+    const database = await assertDatabaseOwned(params.databaseId, user.organizationId)
+    logDatabaseActivity(database, user, 'database.stop')
     return stopDatabase(params.databaseId)
   })

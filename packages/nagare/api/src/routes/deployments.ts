@@ -7,6 +7,7 @@ import {
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
+import { logServiceActivity } from '../shared/activity'
 
 export const deploymentsRoutes = new Elysia({ name: 'deployments', prefix: '/deployments' })
   .use(authPlugin)
@@ -17,6 +18,8 @@ export const deploymentsRoutes = new Elysia({ name: 'deployments', prefix: '/dep
   })
   // ⏪ roll the service back to this deployment's snapshot and redeploy
   .post('/:deploymentId/rollback', { auth: true }, async ({ user, params }) => {
-    await assertDeploymentOwned(params.deploymentId, user.organizationId)
+    const deployment = await assertDeploymentOwned(params.deploymentId, user.organizationId)
+    const service = await assertServiceOwned(deployment.serviceId, user.organizationId)
+    logServiceActivity(service, user, 'service.rollback', { deploymentId: deployment.id })
     return rollbackDeployment(params.deploymentId, user.id)
   })

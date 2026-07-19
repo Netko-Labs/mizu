@@ -1,3 +1,4 @@
+export * from './activities'
 export * from './connections'
 export * from './databases'
 export * from './deployments'

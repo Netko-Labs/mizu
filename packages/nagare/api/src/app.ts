@@ -2,6 +2,7 @@ import { createLogger } from '@mizu/logger'
 import { nagareEnvConfig } from '@mizu/nagare-config'
 import { AuthzError, ConflictError, isRuntimeAvailable, NotFoundError } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
+import { activitiesRoutes } from './routes/activities'
 import { connectionsRoutes } from './routes/connections'
 import { databasesRoutes } from './routes/databases'
 import { deploymentsRoutes } from './routes/deployments'
@@ -66,6 +67,7 @@ export const app = new Elysia()
   .use(databasesRoutes)
   .use(connectionsRoutes)
   .use(deploymentsRoutes)
+  .use(activitiesRoutes)
   .use(environmentsRoutes)
   .use(instanceSettingsRoutes)
   .use(systemRoutes)

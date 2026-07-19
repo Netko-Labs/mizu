@@ -25,6 +25,7 @@ import {
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
+import { logServiceActivity } from '../shared/activity'
 
 export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services' })
   .use(authPlugin)
@@ -49,7 +50,7 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
   .post('/', { auth: true, body: CreateServiceSchema }, async ({ user, body }) => {
     await assertProjectOwned(body.projectId, user.organizationId)
     const environmentId = await resolveEnvironmentId(body.projectId, body.environmentId)
-    return createService({
+    const created = await createService({
       projectId: body.projectId,
       environmentId,
       name: body.name,
@@ -57,6 +58,8 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
       sourceConfig: body.sourceConfig,
       ports: body.ports,
     })
+    if (created) logServiceActivity(created, user, 'service.create')
+    return created
   })
   // 🔐 the service's user env vars, decrypted (owner-scoped — same precedent
   // as database connection-info)
@@ -69,8 +72,12 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
     '/:serviceId/env-vars',
     { auth: true, body: UpdateEnvVarsSchema },
     async ({ user, params, body }) => {
-      await assertServiceOwned(params.serviceId, user.organizationId)
-      return updateServiceEnvVars(params.serviceId, body)
+      const service = await assertServiceOwned(params.serviceId, user.organizationId)
+      const result = await updateServiceEnvVars(params.serviceId, body)
+      logServiceActivity(service, user, 'service.env-update', {
+        varsChanged: Object.keys(body).length,
+      })
+      return result
     },
   )
   // (๑˃ᴗ˂)ﻭ tweak a service
@@ -78,8 +85,10 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
     '/:serviceId',
     { auth: true, body: UpdateServiceSchema },
     async ({ user, params, body }) => {
-      await assertServiceOwned(params.serviceId, user.organizationId)
-      return updateService(params.serviceId, body)
+      const service = await assertServiceOwned(params.serviceId, user.organizationId)
+      const result = await updateService(params.serviceId, body)
+      logServiceActivity(service, user, 'service.update', { fields: Object.keys(body) })
+      return result
     },
   )
   // ⇢ nudge the node on the canvas
@@ -93,26 +102,32 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
   )
   // (ノ﹏ヽ) delete a service
   .delete('/:serviceId', { auth: true }, async ({ user, params }) => {
-    await assertServiceOwned(params.serviceId, user.organizationId)
-    return deleteService(params.serviceId)
+    const service = await assertServiceOwned(params.serviceId, user.organizationId)
+    const result = await deleteService(params.serviceId)
+    logServiceActivity(service, user, 'service.delete')
+    return result
   })
   // 🚀 ship it
   .post('/:serviceId/deploy', { auth: true }, async ({ user, params }) => {
-    await assertServiceOwned(params.serviceId, user.organizationId)
+    const service = await assertServiceOwned(params.serviceId, user.organizationId)
+    logServiceActivity(service, user, 'service.deploy')
     return deployService(params.serviceId, { trigger: 'user', userId: user.id })
   })
   // ▶ start the container
   .post('/:serviceId/start', { auth: true }, async ({ user, params }) => {
-    await assertServiceOwned(params.serviceId, user.organizationId)
+    const service = await assertServiceOwned(params.serviceId, user.organizationId)
+    logServiceActivity(service, user, 'service.start')
     return startService(params.serviceId)
   })
   // ⏹ stop the container
   .post('/:serviceId/stop', { auth: true }, async ({ user, params }) => {
-    await assertServiceOwned(params.serviceId, user.organizationId)
+    const service = await assertServiceOwned(params.serviceId, user.organizationId)
+    logServiceActivity(service, user, 'service.stop')
     return stopService(params.serviceId)
   })
   // 🔄 restart the container
   .post('/:serviceId/restart', { auth: true }, async ({ user, params }) => {
-    await assertServiceOwned(params.serviceId, user.organizationId)
+    const service = await assertServiceOwned(params.serviceId, user.organizationId)
+    logServiceActivity(service, user, 'service.restart')
     return restartService(params.serviceId)
   })
