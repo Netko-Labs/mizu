@@ -4,6 +4,7 @@ import {
   IconCode,
   IconFocusCentered,
   IconGrid3x3,
+  IconHistory,
   IconLayoutSidebar,
   IconSettings,
   IconTerminal,
@@ -25,9 +26,11 @@ interface CanvasToolbarProps {
   sidebarOpen: boolean
   yamlOpen: boolean
   logsOpen: boolean
+  activityOpen: boolean
   onToggleSidebar: () => void
   onToggleYaml: () => void
   onToggleLogs: () => void
+  onToggleActivity: () => void
   onOpenSettings: () => void
   onDeploy: () => void
 }
@@ -73,9 +76,11 @@ export function CanvasToolbar({
   sidebarOpen,
   yamlOpen,
   logsOpen,
+  activityOpen,
   onToggleSidebar,
   onToggleYaml,
   onToggleLogs,
+  onToggleActivity,
   onOpenSettings,
   onDeploy,
 }: CanvasToolbarProps) {
@@ -143,6 +148,15 @@ export function CanvasToolbar({
           label="Logs"
         >
           <IconTerminal className="size-3.5" />
+        </ToolbarButton>
+
+        <ToolbarButton
+          active={activityOpen}
+          onClick={onToggleActivity}
+          title="Toggle activity feed"
+          label="Activity"
+        >
+          <IconHistory className="size-3.5" />
         </ToolbarButton>
       </div>
 

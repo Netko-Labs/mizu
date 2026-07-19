@@ -1,5 +1,6 @@
 import { IconX } from '@tabler/icons-react'
 import { AnimatePresence, motion } from 'motion/react'
+import { ActivityFeed } from '@/components/canvas/activity-feed'
 import { CanvasContextMenu } from '@/components/canvas/canvas-context-menu'
 import { CanvasEditor } from '@/components/canvas/canvas-editor'
 import { CanvasProvider } from '@/components/canvas/canvas-provider'
@@ -10,6 +11,7 @@ import { LogsPanel } from '@/components/canvas/logs-panel'
 import { ProjectSettingsDialog } from '@/components/canvas/project-settings-dialog'
 import { ServiceDrawer } from '@/components/canvas/service-drawer'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
+import { Spinner } from '@/components/ui/spinner'
 import type { CanvasViewInnerProps, CanvasViewProps } from './lib'
 import { useActiveEnvironment, useCanvasView } from './lib'
 
@@ -24,7 +26,7 @@ export function CanvasView({ projectId, projectName }: CanvasViewProps) {
   if (isLoading || !activeEnvironmentId) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-black font-mono">
-        <div className="text-xs text-neutral-600">$ loading environments...</div>
+        <Spinner className="size-4 text-muted-foreground" />
       </div>
     )
   }
@@ -89,6 +91,8 @@ function CanvasViewInner({
     setSettingsOpen,
     selectedNodeId,
     setSelectedNodeId,
+    activityOpen,
+    setActivityOpen,
     drawerTab,
     setDrawerTab,
     logsTarget,
@@ -109,8 +113,10 @@ function CanvasViewInner({
           sidebarOpen={sidebarOpen}
           yamlOpen={yamlOpen}
           logsOpen={!!logsTarget}
+          activityOpen={activityOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onToggleYaml={() => setYamlOpen(!yamlOpen)}
+          onToggleActivity={() => setActivityOpen(!activityOpen)}
           onToggleLogs={() =>
             setLogsTarget((prev) => (prev ? null : { nodeId: '', nodeType: 'service' }))
           }
@@ -162,7 +168,7 @@ function CanvasViewInner({
           >
             <div className="flex h-full flex-col overflow-hidden">
               <div className="flex items-center justify-between border-b border-blue-500/10 px-3 py-2">
-                <span className="text-[10px] text-neutral-600"># components</span>
+                <span className="text-[11px] text-muted-foreground">Components</span>
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(false)}
@@ -222,7 +228,7 @@ function CanvasViewInner({
           >
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-blue-500/10 px-3 py-2">
-                <span className="text-[10px] text-neutral-600"># yaml preview</span>
+                <span className="text-[11px] text-muted-foreground">mizu.yml</span>
                 <button
                   type="button"
                   onClick={() => setYamlOpen(false)}
@@ -259,6 +265,21 @@ function CanvasViewInner({
               }
               onClose={() => setLogsTarget(null)}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Activity feed overlay */}
+      <AnimatePresence>
+        {activityOpen && (
+          <motion.div
+            initial={{ x: 320, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 320, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute top-12 right-0 bottom-0 z-20 w-[320px] border-l border-border bg-card/95 backdrop-blur-md"
+          >
+            <ActivityFeed projectId={projectId} onClose={() => setActivityOpen(false)} />
           </motion.div>
         )}
       </AnimatePresence>

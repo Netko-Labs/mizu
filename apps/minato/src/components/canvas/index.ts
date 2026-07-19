@@ -1,3 +1,4 @@
+export * from './activity-feed'
 export * from './canvas-context-menu'
 export * from './canvas-editor'
 export * from './canvas-provider'

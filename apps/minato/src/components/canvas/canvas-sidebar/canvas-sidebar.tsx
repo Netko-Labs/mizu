@@ -34,7 +34,7 @@ export function CanvasSidebar({ className, onAddService, onAddDatabase }: Canvas
       {/* Search header */}
       <div className="border-b border-neutral-800 p-4">
         <div className="flex items-center gap-2 rounded-md border border-neutral-800 bg-neutral-950 px-3 py-1.5">
-          <span className="text-[10px] text-neutral-700">$ grep</span>
+          <span className="text-[10px] text-neutral-600">Search</span>
           <Input
             placeholder="search..."
             value={searchQuery}
@@ -139,7 +139,7 @@ export function CanvasSidebar({ className, onAddService, onAddDatabase }: Canvas
             {COMING_SOON_ITEMS.map((item) => (
               <div key={item.label} className="flex items-center gap-2 px-2 py-1.5">
                 <item.icon className="size-4 text-neutral-700" />
-                <span className="text-xs text-neutral-700"># {item.label}</span>
+                <span className="text-xs text-neutral-600">{item.label}</span>
                 <span className="ml-auto rounded border border-neutral-800 px-1.5 py-0.5 text-[9px] text-neutral-700">
                   soon
                 </span>

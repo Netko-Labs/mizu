@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react'
 import { type Node, type NodeProps, Position } from '@xyflow/react'
 import { useState } from 'react'
+import { formatRelativeTime } from '@/components/canvas/lib'
 import { BaseHandle } from '@/components/canvas/shared/base-handle'
 import {
   BaseNode,
@@ -149,10 +150,13 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
             <span className="truncate text-xs">{getSourceInfo(service)}</span>
           </div>
 
-          {/* Status */}
+          {/* Status + last update */}
           <div className="flex items-center gap-2">
             <span className={cn('size-2 rounded-full', cfg.dot)} />
             <span className={cn('text-xs font-medium', cfg.color)}>{cfg.label}</span>
+            <span className="ml-auto truncate text-[10px] text-neutral-600">
+              {formatRelativeTime(service.updatedAt)}
+            </span>
           </div>
         </BaseNodeContent>
       </BaseNode>

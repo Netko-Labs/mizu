@@ -6,7 +6,7 @@ export function BaseNode({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-blue-500/10 bg-[#0A0A0A] text-neutral-300 shadow-lg shadow-black/50',
+        'relative rounded-xl border border-border bg-card text-foreground/80 shadow-lg shadow-black/50',
         'transition-all duration-200',
         'hover:border-blue-500/20 hover:shadow-xl hover:shadow-blue-950/20',
         '[.react-flow\\_\\_node.selected_&]:border-blue-500/30',
