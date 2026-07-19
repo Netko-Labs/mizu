@@ -47,5 +47,9 @@ export const serviceTemplates: ServiceTemplate[] = [
         ].join('\n'),
       },
     ],
+    // Persist provider auth + plugins across redeploys — otherwise every deploy
+    // wipes the CLI logins (per the image's run guide: `-v …:/root/.cli-proxy-api`
+    // and `-v …:/CLIProxyAPI/plugins`).
+    volumes: ['/root/.cli-proxy-api', '/CLIProxyAPI/plugins'],
   },
 ]

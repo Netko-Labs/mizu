@@ -21,6 +21,11 @@ import { decrypt } from '../../shared/crypto'
 
 const logger = createLogger('service:deploy-service')
 
+/** A filesystem-safe host dir name derived from a container path. */
+function volumeDirName(containerPath: string): string {
+  return containerPath.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^-+/, '') || 'root'
+}
+
 export interface DeploymentResult {
   success: boolean
   containerId?: string
@@ -125,18 +130,29 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
 
     // Seed any template config files onto the host and bind-mount them — some
     // images (e.g. CLIProxyAPI) won't boot without a config file.
+    const serviceDir = join(getMizuHome(), 'services', serviceId)
     const configFiles =
       (service.sourceConfig as { configFiles?: Array<{ path: string; content: string }> })
         .configFiles ?? []
     const volumes: Array<{ source: string; target: string }> = []
     if (configFiles.length) {
-      const dir = join(getMizuHome(), 'services', serviceId)
-      await ensureDir(dir)
+      await ensureDir(serviceDir)
       for (const file of configFiles) {
-        const hostPath = join(dir, basename(file.path))
+        const hostPath = join(serviceDir, basename(file.path))
         await writeFileAtomic(hostPath, file.content)
         volumes.push({ source: hostPath, target: file.path })
       }
+    }
+
+    // Persistent volumes: template-declared container dirs that must survive
+    // redeploys (provider auth, plugins). Back each with a host dir under the
+    // service's mizu home — reused across deploys, so its contents outlive the
+    // container.
+    const persistentVolumes = (service.sourceConfig as { volumes?: string[] }).volumes ?? []
+    for (const containerPath of persistentVolumes) {
+      const hostDir = join(serviceDir, 'volumes', volumeDirName(containerPath))
+      await ensureDir(hostDir)
+      volumes.push({ source: hostDir, target: containerPath })
     }
 
     const containerId = await createContainer({

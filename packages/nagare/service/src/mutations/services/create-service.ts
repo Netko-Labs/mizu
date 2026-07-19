@@ -23,11 +23,13 @@ function resolveTemplate(data: ServiceInsert): ServiceInsert {
   return {
     ...data,
     sourceType: 'image',
-    // Carry configFiles onto the stored image sourceConfig so deploy can seed
-    // and bind-mount them (the image needs them to boot).
+    // Carry configFiles + persistent volumes onto the stored image sourceConfig
+    // so deploy can seed/bind-mount them (the image needs them to boot and to
+    // keep provider auth across redeploys).
     sourceConfig: {
       ...template.sourceConfig,
       ...(template.configFiles ? { configFiles: template.configFiles } : {}),
+      ...(template.volumes ? { volumes: template.volumes } : {}),
     },
     ports:
       Array.isArray(data.ports) && data.ports.length ? data.ports : (template.defaultPorts ?? []),

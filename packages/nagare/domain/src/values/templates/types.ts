@@ -22,6 +22,13 @@ export interface ServiceTemplate {
    * CLIProxyAPI) that require a config file and won't boot without one.
    */
   configFiles?: Array<{ path: string; content: string }>
+  /**
+   * Container directories that must survive redeploys (provider auth, plugins,
+   * caches). mizu backs each with a persistent host dir and bind-mounts it, so
+   * its contents outlive the container — e.g. CLIProxyAPI's `/root/.cli-proxy-api`
+   * auth dir and `/CLIProxyAPI/plugins`.
+   */
+  volumes?: string[]
   healthCheck?: {
     test: string[]
     interval: string
