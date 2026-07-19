@@ -1,2 +1,2 @@
 export * from './hooks/use-project-canvas'
-export type { CanvasPosition, CanvasServiceGroup } from './types'
+export type { CanvasPosition, CanvasServiceGroup, PropertyAction } from './types'

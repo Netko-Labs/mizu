@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import type { PropertyAction } from '@/components/canvas/node-property-editor'
+import type { PropertyAction } from '@/components/canvas/lib'
 import {
   deleteDatabase,
   deleteService,

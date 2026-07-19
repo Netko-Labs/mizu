@@ -1,6 +1,21 @@
-import type { ConnectionType, ServiceConnection } from '@mizu/nagare-domain'
+import type { ConnectionType, IngressRule, ServiceConnection } from '@mizu/nagare-domain'
 import type { ProjectWithServices, Serialized } from '@/shared/api'
 import type { useCanvasMutations } from './hooks/use-canvas-mutations'
+
+/** Every edit/lifecycle action a node panel can dispatch (→ use-node-actions). */
+export type PropertyAction =
+  | { type: 'updateName'; name: string }
+  | { type: 'updateSourceConfig'; sourceConfig: { image: string; tag?: string } }
+  | {
+      type: 'updateCredentials'
+      credentials: { username: string; password: string; database: string }
+    }
+  | { type: 'updateIngress'; ingressRules: IngressRule[] }
+  | { type: 'delete' }
+  | { type: 'deploy' }
+  | { type: 'start' }
+  | { type: 'stop' }
+  | { type: 'restart' }
 
 export interface CanvasPosition {
   x: number

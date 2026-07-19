@@ -1,20 +1,9 @@
 import type { Database, IngressRule, Service, ServiceSourceType } from '@mizu/nagare-domain'
 import type { ReactNode, RefObject } from 'react'
+import type { PropertyAction } from '@/components/canvas/lib'
 import type { Serialized } from '@/shared/api'
 
-export type PropertyAction =
-  | { type: 'updateName'; name: string }
-  | { type: 'updateSourceConfig'; sourceConfig: { image: string; tag?: string } }
-  | {
-      type: 'updateCredentials'
-      credentials: { username: string; password: string; database: string }
-    }
-  | { type: 'updateIngress'; ingressRules: IngressRule[] }
-  | { type: 'delete' }
-  | { type: 'deploy' }
-  | { type: 'start' }
-  | { type: 'stop' }
-  | { type: 'restart' }
+export type { PropertyAction }
 
 export interface NodePropertyEditorProps {
   nodeId: string

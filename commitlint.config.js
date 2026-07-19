@@ -27,8 +27,11 @@ export default {
   },
   parserPreset: {
     parserOpts: {
+      // ️ = emoji variation selector — part of ♻️/🏗️ but in no emoji
+      // property class, so it must be allowed explicitly or those types can
+      // never match.
       headerPattern:
-        /^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+\s\w+)(?:\((.+)\))?:\s(.+)$/u,
+        /^((?:[\p{Emoji_Presentation}\p{Extended_Pictographic}]|\uFE0F)+\s\w+)(?:\((.+)\))?:\s(.+)$/u,
       headerCorrespondence: ['type', 'scope', 'subject'],
     },
   },
