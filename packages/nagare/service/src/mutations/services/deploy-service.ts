@@ -18,6 +18,7 @@ import {
   stopContainer,
 } from '../../runtime'
 import { parseUserEnvVars } from '../../shared/env-vars'
+import { recordDeployment } from '../deployments/record-deployment'
 
 const logger = createLogger('service:deploy-service')
 
@@ -32,6 +33,11 @@ export interface DeploymentResult {
   error?: string
 }
 
+export interface DeployOptions {
+  trigger?: 'user' | 'supervisor' | 'rollback'
+  userId?: string | null
+}
+
 /**
  * Deploys a service by:
  * 1. Pull image based on sourceType
@@ -41,7 +47,10 @@ export interface DeploymentResult {
  * 5. Start container
  * 6. Update service status
  */
-export const deployService = async (serviceId: string): Promise<DeploymentResult> => {
+export const deployService = async (
+  serviceId: string,
+  opts: DeployOptions = {},
+): Promise<DeploymentResult> => {
   // Get service + parent project
   const [service] = await db.select().from(serviceTable).where(eq(serviceTable.id, serviceId))
 
@@ -65,6 +74,17 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
     return { success: false, error: 'Environment not found' }
   }
   const { namespace } = deployCtx
+
+  // History snapshot: what this deploy ships (rollback restores exactly this).
+  const historyBase = {
+    serviceId,
+    projectId: service.projectId,
+    environmentId: service.environmentId,
+    sourceConfig: service.sourceConfig,
+    envVarsSnapshot: service.envVars,
+    trigger: opts.trigger ?? 'user',
+    triggeredBy: opts.userId ?? null,
+  }
 
   try {
     // If there's an existing container, remove it first (stale deploy cleanup)
@@ -172,12 +192,14 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
 
     logger.info({ serviceId, containerId, containerName }, 'Service deployed successfully')
     syncIngressSafe()
+    void recordDeployment({ ...historyBase, status: 'success', containerId })
     return { success: true, containerId }
   } catch (error) {
     await db.update(serviceTable).set({ status: 'error' }).where(eq(serviceTable.id, serviceId))
 
     const message = error instanceof Error ? error.message : 'Unknown deployment error'
     logger.error({ serviceId, error: message }, 'Service deployment failed')
+    void recordDeployment({ ...historyBase, status: 'error', error: message })
     return { success: false, error: message }
   }
 }

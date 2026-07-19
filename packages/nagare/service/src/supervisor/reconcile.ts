@@ -111,7 +111,7 @@ async function redeployDependents(entity: EntityRecord): Promise<void> {
       'Target came back with a new IP — re-deploying dependent service',
     )
     try {
-      const result = await deployService(fromServiceId)
+      const result = await deployService(fromServiceId, { trigger: 'supervisor' })
       if (!result.success) throw new Error(result.error ?? 'deploy failed')
     } catch (error) {
       logger.error({ dependent: fromServiceId, error: String(error) }, 'Dependent re-deploy failed')
@@ -169,7 +169,7 @@ async function healMissing(entity: EntityRecord, state: SupervisorState): Promis
 
   try {
     if (entity.kind === 'service') {
-      const result = await deployService(entity.id)
+      const result = await deployService(entity.id, { trigger: 'supervisor' })
       if (!result.success) throw new Error(result.error ?? 'deploy failed')
     } else {
       await deployDatabase(entity.id)

@@ -99,7 +99,7 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
   // 🚀 ship it
   .post('/:serviceId/deploy', { auth: true }, async ({ user, params }) => {
     await assertServiceOwned(params.serviceId, user.organizationId)
-    return deployService(params.serviceId)
+    return deployService(params.serviceId, { trigger: 'user', userId: user.id })
   })
   // ▶ start the container
   .post('/:serviceId/start', { auth: true }, async ({ user, params }) => {

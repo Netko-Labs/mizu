@@ -4,6 +4,7 @@ import { AuthzError, ConflictError, isRuntimeAvailable, NotFoundError } from '@m
 import { Elysia } from 'elysia'
 import { connectionsRoutes } from './routes/connections'
 import { databasesRoutes } from './routes/databases'
+import { deploymentsRoutes } from './routes/deployments'
 import { environmentsRoutes } from './routes/environments'
 import { instanceSettingsRoutes } from './routes/instance-settings'
 import { logsRoutes } from './routes/logs'
@@ -64,6 +65,7 @@ export const app = new Elysia()
   .use(servicesRoutes)
   .use(databasesRoutes)
   .use(connectionsRoutes)
+  .use(deploymentsRoutes)
   .use(environmentsRoutes)
   .use(instanceSettingsRoutes)
   .use(systemRoutes)

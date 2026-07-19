@@ -8,6 +8,7 @@
 
 import {
   databaseTable,
+  deploymentTable,
   environmentTable,
   projectTable,
   serviceConnectionTable,
@@ -86,6 +87,18 @@ export async function assertDatabaseOwned(databaseId: string, organizationId: st
   if (!row) throw new NotFoundError('Database not found')
   if (row.organizationId !== organizationId) throw new AuthzError()
   return row.database
+}
+
+/** Assert a deployment's project belongs to the team. */
+export async function assertDeploymentOwned(deploymentId: string, organizationId: string) {
+  const [row] = await db
+    .select({ deployment: deploymentTable, organizationId: projectTable.organizationId })
+    .from(deploymentTable)
+    .innerJoin(projectTable, eq(deploymentTable.projectId, projectTable.id))
+    .where(eq(deploymentTable.id, deploymentId))
+  if (!row) throw new NotFoundError('Deployment not found')
+  if (row.organizationId !== organizationId) throw new AuthzError()
+  return row.deployment
 }
 
 /** Assert a connection's source service's project belongs to the team. */

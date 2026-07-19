@@ -1,5 +1,6 @@
 export * from './connections'
 export * from './databases'
+export * from './deployments'
 export * from './environments'
 export * from './instance-settings'
 export * from './projects'
