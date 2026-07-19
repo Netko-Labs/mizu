@@ -1,4 +1,6 @@
+export * from './activities'
 export * from './databases'
+export * from './deployments'
 export * from './env-groups'
 export * from './environments'
 export * from './external-services'

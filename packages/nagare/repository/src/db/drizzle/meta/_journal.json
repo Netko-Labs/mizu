@@ -22,6 +22,13 @@
       "when": 1784432853709,
       "tag": "0002_fix_jsonb_double_encoding",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784438884532,
+      "tag": "0003_panoramic_lilith",
+      "breakpoints": true
     }
   ]
 }
