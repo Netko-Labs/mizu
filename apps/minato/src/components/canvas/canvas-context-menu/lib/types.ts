@@ -1,7 +1,7 @@
 import type { Database, Service } from '@mizu/nagare-domain'
 import type { Icon } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
-import type { PropertyAction } from '@/components/canvas/node-property-editor'
+import type { PropertyAction } from '@/components/canvas/lib'
 import type { Serialized } from '@/shared/api'
 
 export interface CanvasPosition {

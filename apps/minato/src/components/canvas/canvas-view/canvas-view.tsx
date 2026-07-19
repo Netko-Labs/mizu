@@ -7,8 +7,8 @@ import { CanvasSidebar } from '@/components/canvas/canvas-sidebar'
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { DeployDialog } from '@/components/canvas/deploy-dialog'
 import { LogsPanel } from '@/components/canvas/logs-panel'
-import { NodePropertyEditor } from '@/components/canvas/node-property-editor'
 import { ProjectSettingsDialog } from '@/components/canvas/project-settings-dialog'
+import { ServiceDrawer } from '@/components/canvas/service-drawer'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
 import type { CanvasViewInnerProps, CanvasViewProps } from './lib'
 import { useActiveEnvironment, useCanvasView } from './lib'
@@ -89,6 +89,8 @@ function CanvasViewInner({
     setSettingsOpen,
     selectedNodeId,
     setSelectedNodeId,
+    drawerTab,
+    setDrawerTab,
     logsTarget,
     setLogsTarget,
   } = overlays
@@ -173,23 +175,27 @@ function CanvasViewInner({
         )}
       </AnimatePresence>
 
-      {/* Right property panel overlay */}
+      {/* Service drawer — wide, non-modal tabbed panel floating over the canvas */}
       <AnimatePresence>
         {selectedNodeId && (selectedService || selectedDatabase) && (
           <motion.div
-            initial={{ x: 340, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 340, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute bottom-0 right-0 top-12 z-20 w-[340px] border-l border-blue-500/10 bg-black/95 backdrop-blur-md"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="absolute top-14 right-3 bottom-3 z-30 w-[620px] max-w-[calc(100vw-360px)] overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur-md"
           >
-            <NodePropertyEditor
+            <ServiceDrawer
               nodeId={selectedNodeId}
-              projectSlug={project?.slug ?? ''}
+              nodeType={actionableSelectedNodeType}
               service={selectedService}
               database={selectedDatabase}
-              nodeType={actionableSelectedNodeType}
-              onClose={() => setSelectedNodeId(null)}
+              projectSlug={project?.slug ?? ''}
+              initialTab={drawerTab}
+              onClose={() => {
+                setSelectedNodeId(null)
+                setDrawerTab(null)
+              }}
               onAction={(action) =>
                 handleNodeAction(selectedNodeId, actionableSelectedNodeType, action)
               }
