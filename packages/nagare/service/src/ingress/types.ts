@@ -24,7 +24,7 @@ export interface CaddyConfig {
         mizu: {
           listen: string[]
           routes: CaddyRoute[]
-          automatic_https?: { skip_certificates: string[] }
+          automatic_https?: { skip_certificates: string[]; disable_redirects?: boolean }
         }
       }
     }

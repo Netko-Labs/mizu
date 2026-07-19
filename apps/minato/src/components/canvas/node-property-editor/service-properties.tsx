@@ -1,4 +1,5 @@
 import type {
+  IngressRule,
   PortMapping,
   ServiceSourceType,
   ServiceStatus,
@@ -20,6 +21,7 @@ import {
   SectionHeader,
   SourceTypeIcon,
 } from './property-primitives'
+import { ServiceIngressEditor } from './service-ingress-editor'
 
 export function ServiceProperties({
   service,
@@ -36,6 +38,8 @@ export function ServiceProperties({
     projectSlug,
     service.status === 'running' && ports.length > 0,
   )
+  const ingressRules =
+    ((service.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
   const volumes = (service.volumeMounts ?? []) as VolumeMount[]
 
   const getSourceInfo = (): string => {
@@ -146,19 +150,16 @@ export function ServiceProperties({
       </div>
 
       {/* Ingress */}
-      {ingressUrl && (
-        <div>
-          <SectionHeader title="ingress" />
-          <a
-            href={ingressUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="block truncate rounded border border-blue-500/20 bg-blue-500/5 px-2 py-1 font-mono text-[11px] text-blue-400 transition-colors hover:border-blue-500/40 hover:text-blue-300"
-          >
-            {ingressUrl}
-          </a>
-        </div>
-      )}
+      <div>
+        <SectionHeader title="ingress" />
+        <ServiceIngressEditor
+          rules={ingressRules}
+          ports={ports.map((p) => p.container)}
+          running={service.status === 'running'}
+          autoUrl={ingressUrl}
+          onChange={(rules) => onAction?.({ type: 'updateIngress', ingressRules: rules })}
+        />
+      </div>
 
       {/* Volumes */}
       <div>

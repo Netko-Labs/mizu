@@ -1,4 +1,4 @@
-import type { Database, Service, ServiceSourceType } from '@mizu/nagare-domain'
+import type { Database, IngressRule, Service, ServiceSourceType } from '@mizu/nagare-domain'
 import type { ReactNode, RefObject } from 'react'
 import type { Serialized } from '@/shared/api'
 
@@ -9,6 +9,7 @@ export type PropertyAction =
       type: 'updateCredentials'
       credentials: { username: string; password: string; database: string }
     }
+  | { type: 'updateIngress'; ingressRules: IngressRule[] }
   | { type: 'delete' }
   | { type: 'deploy' }
   | { type: 'start' }
@@ -37,6 +38,32 @@ export interface DatabasePropertiesProps {
   database: Serialized<Database>
   onAction?: (action: PropertyAction) => void
   isActionPending?: boolean
+}
+
+export interface ServiceIngressEditorProps {
+  rules: IngressRule[]
+  ports: number[]
+  running: boolean
+  autoUrl: string | null
+  onChange: (rules: IngressRule[]) => void
+}
+
+export interface UseIngressRulesOptions {
+  ports: number[]
+  rules: IngressRule[]
+  onChange: (rules: IngressRule[]) => void
+}
+
+export interface UseIngressRulesResult {
+  port: number
+  setPort: (port: number) => void
+  hostType: IngressRule['hostType']
+  setHostType: (hostType: IngressRule['hostType']) => void
+  host: string
+  setHost: (host: string) => void
+  canAdd: boolean
+  addRule: () => void
+  removeRule: (id: string) => void
 }
 
 export interface SectionHeaderProps {

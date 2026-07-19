@@ -1,6 +1,7 @@
 import { type Service, type ServiceUpdate, serviceTable } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
 import { eq } from 'drizzle-orm'
+import { syncIngressSafe } from '../../ingress'
 
 export const updateService = async (
   serviceId: string,
@@ -11,6 +12,8 @@ export const updateService = async (
     .set(data)
     .where(eq(serviceTable.id, serviceId))
     .returning()
+  // Name or ingress-rule edits change the desired caddy routes — re-sync.
+  syncIngressSafe()
   return result as Service | undefined
 }
 

@@ -11,6 +11,7 @@ import {
   instanceSettingTable,
   type ProjectSettings,
   projectTable,
+  type ServiceSettings,
   serviceTable,
 } from '@mizu/nagare-domain'
 import { db } from '@mizu/nagare-repository'
@@ -39,6 +40,20 @@ export function serviceIngressHost(
   return `${sanitizeName(serviceName)}-${sanitizeName(namespace)}.${baseDomain}`
 }
 
+/**
+ * The public host of a manual ingress rule. A `subdomain` rule is a label
+ * under the instance base domain (covered by the `*.domain` wildcard cert); a
+ * `custom` rule is a full FQDN used verbatim (its own ACME cert).
+ */
+export function manualIngressHost(
+  rule: { hostType: 'subdomain' | 'custom'; host: string },
+  baseDomain: string,
+): string {
+  return rule.hostType === 'subdomain'
+    ? `${sanitizeName(rule.host)}.${baseDomain}`
+    : rule.host.toLowerCase()
+}
+
 /** Base domain from instance settings, defaulting to *.localhost */
 export async function getIngressBaseDomain(): Promise<string> {
   const [settings] = await db.select().from(instanceSettingTable).limit(1)
@@ -65,6 +80,7 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
       name: serviceTable.name,
       status: serviceTable.status,
       ports: serviceTable.ports,
+      settings: serviceTable.settings,
       containerId: serviceTable.containerId,
       projectSlug: projectTable.slug,
       projectSettings: projectTable.settings,
@@ -76,19 +92,40 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
     .innerJoin(environmentTable, eq(serviceTable.environmentId, environmentTable.id))
 
   const routes: CaddyRoute[] = []
+  // Manual custom-FQDN hosts need their own ACME cert (not the wildcard).
+  const customHosts: string[] = []
+
   for (const service of services) {
     if (service.status !== 'running' || !service.projectSlug || !service.containerId) continue
-    const ports = (service.ports as Array<{ container?: number }> | null) ?? []
-    const containerPort = ports[0]?.container
-    if (!containerPort) continue
     const upstreamIp = ipByContainer.get(service.containerId)
     if (!upstreamIp) continue
 
+    const ports = (service.ports as Array<{ container?: number }> | null) ?? []
     const namespace = deployNamespace(service.projectSlug, service.envSlug, service.envIsDefault)
     // Per-project base-domain override; falls back to the instance base domain.
-    const settings = (service.projectSettings ?? {}) as ProjectSettings
-    const hostDomain = settings.domain || baseDomain
+    const projectSettings = (service.projectSettings ?? {}) as ProjectSettings
+    const hostDomain = projectSettings.domain || baseDomain
+    const rules = ((service.settings ?? {}) as ServiceSettings).ingressRules ?? []
 
+    if (rules.length > 0) {
+      // Opt-in override: a service with manual rules is served ONLY on those
+      // hosts, each targeting the rule's chosen port (no auto-derived host).
+      for (const rule of rules) {
+        const host = manualIngressHost(rule, baseDomain)
+        if (rule.hostType === 'custom') customHosts.push(host)
+        routes.push({
+          match: [{ host: [host] }],
+          handle: [
+            { handler: 'reverse_proxy', upstreams: [{ dial: `${upstreamIp}:${rule.port}` }] },
+          ],
+        })
+      }
+      continue
+    }
+
+    // Auto host: the first port on `{service}-{namespace}.{hostDomain}`.
+    const containerPort = ports[0]?.container
+    if (!containerPort) continue
     routes.push({
       match: [{ host: [serviceIngressHost(service.name, namespace, hostDomain)] }],
       handle: [
@@ -151,8 +188,23 @@ ${identityLines}
   // One cert (*.domain) covers every single-label app host; per-host issuance
   // is skipped explicitly so caddy never races Let's Encrypt per app.
   const cfToken = nagareEnvConfig.ingress.cloudflareApiToken
-  const tlsEnabled = Boolean(cfToken) && baseDomain !== 'localhost'
+  // Wildcard TLS (DNS-01) covers every single-label host under the base domain.
+  const wildcardTls = Boolean(cfToken) && baseDomain !== 'localhost'
+  // Custom-FQDN ingress rules get their own cert via ACME (HTTP-01/TLS-ALPN), so
+  // caddy must listen on 443 for them even when the wildcard isn't configured.
+  const tlsListener = wildcardTls || customHosts.length > 0
   const appHosts = routes.flatMap((route) => route.match?.[0]?.host ?? [])
+  // Skip per-host issuance for wildcard-covered hosts (the *.domain cert already
+  // covers them); custom FQDNs are NOT skipped so caddy provisions each one.
+  const wildcardHosts = appHosts.filter((host) => !customHosts.includes(host))
+  const automaticHttps = tlsListener
+    ? {
+        skip_certificates: wildcardHosts,
+        // Without the wildcard, the auto/subdomain hosts have no cert — don't
+        // force-redirect them to HTTPS (only the custom FQDNs are TLS-served).
+        ...(wildcardTls ? {} : { disable_redirects: true }),
+      }
+    : undefined
 
   const config: CaddyConfig = {
     admin: { listen: `0.0.0.0:${INGRESS_ADMIN_PORT}` },
@@ -160,13 +212,13 @@ ${identityLines}
       http: {
         servers: {
           mizu: {
-            listen: tlsEnabled ? [`:${INGRESS_HTTP_PORT}`, ':443'] : [`:${INGRESS_HTTP_PORT}`],
+            listen: tlsListener ? [`:${INGRESS_HTTP_PORT}`, ':443'] : [`:${INGRESS_HTTP_PORT}`],
             routes,
-            ...(tlsEnabled ? { automatic_https: { skip_certificates: appHosts } } : {}),
+            ...(automaticHttps ? { automatic_https: automaticHttps } : {}),
           },
         },
       },
-      ...(tlsEnabled && cfToken
+      ...(wildcardTls && cfToken
         ? {
             tls: {
               certificates: { automate: [`*.${baseDomain}`] },

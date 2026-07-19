@@ -37,6 +37,8 @@ export const serviceTable = pgTable(
     envVars: text('env_vars'), // Encrypted JSON string
     ports: jsonb('ports').default([]).notNull(),
     volumeMounts: jsonb('volume_mounts').default([]).notNull(),
+    // Typed via ServiceSettings (schemas/services) — holds manual ingress rules.
+    settings: jsonb('settings').default({}).notNull(),
     status: text('status', {
       enum: ['created', 'building', 'starting', 'running', 'stopping', 'stopped', 'error'],
     })
