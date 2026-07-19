@@ -2,6 +2,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DeploymentsTab } from './deployments-tab'
 import { type DrawerTab, type ServiceDrawerProps, TAB_DEFINITIONS, useServiceDrawer } from './lib'
+import { LogsTab } from './logs-tab'
+import { MetricsTab } from './metrics-tab'
 import { DatabaseOverview, OverviewTab } from './overview-tab'
 import { ServiceDrawerHeader } from './service-drawer-header'
 import { SettingsTab } from './settings-tab'
@@ -75,6 +77,18 @@ export function ServiceDrawer({
             <VariablesTab service={service} onAction={onAction} />
           </TabsContent>
         )}
+
+        {nodeType === 'service' && service && (
+          <TabsContent value="metrics" className="min-h-0">
+            <ScrollArea className="h-full">
+              <MetricsTab service={service} />
+            </ScrollArea>
+          </TabsContent>
+        )}
+
+        <TabsContent value="logs" className="min-h-0">
+          <LogsTab nodeType={nodeType} entityId={nodeId} />
+        </TabsContent>
 
         <TabsContent value="settings" className="min-h-0">
           <ScrollArea className="h-full">

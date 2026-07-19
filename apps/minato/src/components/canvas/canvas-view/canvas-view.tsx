@@ -138,7 +138,12 @@ function CanvasViewInner({
             onDeleteServiceGroup={handleDeleteServiceGroup}
             onEditProperties={(nodeId) => setSelectedNodeId(nodeId)}
             onNodeAction={handleNodeAction}
-            onViewLogs={(nodeId, nodeType) => setLogsTarget({ nodeId, nodeType })}
+            onViewLogs={(nodeId) => {
+              // Node-level log actions open the drawer on its Logs tab; the
+              // toolbar toggle keeps the project-level bottom tail.
+              setSelectedNodeId(nodeId)
+              setDrawerTab('logs')
+            }}
             onAddService={handleCreateService}
             onAddDatabase={handleCreateDatabase}
           />

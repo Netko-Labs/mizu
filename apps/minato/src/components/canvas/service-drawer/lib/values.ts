@@ -36,14 +36,14 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
     label: 'Metrics',
     icon: IconChartLine,
     appliesTo: ['service'],
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'logs',
     label: 'Logs',
     icon: IconTerminal2,
     appliesTo: ['service', 'database'],
-    implemented: false,
+    implemented: true,
   },
   {
     id: 'settings',
