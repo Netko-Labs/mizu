@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
-import { boolean, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { jsonb } from './lib/jsonb'
 import { projectTable } from './projects'
 
 /**

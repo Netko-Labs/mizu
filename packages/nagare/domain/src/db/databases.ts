@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
-import { index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { environmentTable } from './environments'
+import { jsonb } from './lib/jsonb'
 import { projectTable } from './projects'
 
 /**

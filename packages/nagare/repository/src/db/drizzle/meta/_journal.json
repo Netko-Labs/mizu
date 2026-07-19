@@ -15,6 +15,13 @@
       "when": 1784424446586,
       "tag": "0001_lumpy_donald_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784432853709,
+      "tag": "0002_fix_jsonb_double_encoding",
+      "breakpoints": true
     }
   ]
 }
