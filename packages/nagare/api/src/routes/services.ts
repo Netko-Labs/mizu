@@ -2,6 +2,7 @@ import {
   CreateServiceSchema,
   PositionSchema,
   ServiceListQuerySchema,
+  UpdateEnvVarsSchema,
   UpdateServiceSchema,
 } from '@mizu/nagare-domain'
 import {
@@ -11,6 +12,7 @@ import {
   deleteService,
   deployService,
   getService,
+  getServiceEnvVars,
   getServiceStatus,
   listServices,
   resolveEnvironmentId,
@@ -19,6 +21,7 @@ import {
   stopService,
   updateCanvasPosition,
   updateService,
+  updateServiceEnvVars,
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
@@ -55,6 +58,21 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
       ports: body.ports,
     })
   })
+  // 🔐 the service's user env vars, decrypted (owner-scoped — same precedent
+  // as database connection-info)
+  .get('/:serviceId/env-vars', { auth: true }, async ({ user, params }) => {
+    await assertServiceOwned(params.serviceId, user.organizationId)
+    return getServiceEnvVars(params.serviceId)
+  })
+  // 🔐 full-replace the user env vars (applied on next deploy)
+  .put(
+    '/:serviceId/env-vars',
+    { auth: true, body: UpdateEnvVarsSchema },
+    async ({ user, params, body }) => {
+      await assertServiceOwned(params.serviceId, user.organizationId)
+      return updateServiceEnvVars(params.serviceId, body)
+    },
+  )
   // (๑˃ᴗ˂)ﻭ tweak a service
   .patch(
     '/:serviceId',

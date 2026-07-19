@@ -17,7 +17,7 @@ import {
   startContainer,
   stopContainer,
 } from '../../runtime'
-import { decrypt } from '../../shared/crypto'
+import { parseUserEnvVars } from '../../shared/env-vars'
 
 const logger = createLogger('service:deploy-service')
 
@@ -102,20 +102,7 @@ export const deployService = async (serviceId: string): Promise<DeploymentResult
 
     // 4. Resolve connection env vars + merge user env vars
     const connectionEnvVars = await resolveConnectionEnvVars(serviceId, namespace)
-
-    let userEnvVars: Record<string, string> = {}
-    if (service.envVars) {
-      try {
-        userEnvVars = JSON.parse(decrypt(service.envVars))
-      } catch {
-        logger.warn({ serviceId }, 'Failed to decrypt env vars, trying as plain JSON')
-        try {
-          userEnvVars = JSON.parse(service.envVars)
-        } catch {
-          logger.warn({ serviceId }, 'Failed to parse env vars')
-        }
-      }
-    }
+    const userEnvVars = parseUserEnvVars(service.envVars)
 
     const env = { ...connectionEnvVars, ...userEnvVars }
 
