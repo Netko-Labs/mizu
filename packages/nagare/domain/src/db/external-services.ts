@@ -48,10 +48,10 @@ export const externalServiceTable = pgTable(
     credentials: text('credentials'), // Encrypted JSON string
     healthEndpoint: text('health_endpoint'),
     canvasPosition: jsonb('canvas_position').default({ x: 0, y: 0 }).notNull(),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
-    updatedAt: timestamp('updated_at')
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),

@@ -121,13 +121,20 @@ export const auth = betterAuth({
       jwt: {
         expirationTime: '1d',
         // Carry the active team + the caller's role in that team so nagare
-        // can scope every request without a shared secret.
+        // can scope every request without a shared secret. definePayload
+        // REPLACES the default claims, so name/email must be re-included —
+        // nagare uses them for activity-feed attribution.
         definePayload: async ({ user: sessionUser, session: activeSession }) => {
           const activeOrganizationId = activeSession.activeOrganizationId ?? null
           const role = activeOrganizationId
             ? await memberRole(sessionUser.id, activeOrganizationId)
             : null
-          return { activeOrganizationId, role }
+          return {
+            activeOrganizationId,
+            role,
+            name: sessionUser.name,
+            email: sessionUser.email,
+          }
         },
       },
     }),

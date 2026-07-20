@@ -19,10 +19,10 @@ export const instanceSettingTable = pgTable('instance_setting', {
   doNotTrack: boolean('do_not_track').notNull().default(false),
   registrationEnabled: boolean('registration_enabled').notNull().default(true),
   updatesCronExpression: text('updates_cron_expression').notNull().default('0 3 * * *'),
-  createdAt: timestamp('created_at')
+  createdAt: timestamp('created_at', { withTimezone: true })
     .$defaultFn(() => new Date())
     .notNull(),
-  updatedAt: timestamp('updated_at')
+  updatedAt: timestamp('updated_at', { withTimezone: true })
     .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
     .notNull(),

@@ -43,7 +43,7 @@ export const activityTable = pgTable(
     // Event context (e.g. { fields: ['ports'] }, { deploymentId }) — NEVER env
     // values or other secrets.
     metadata: jsonb('metadata').default({}).notNull(),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
   },

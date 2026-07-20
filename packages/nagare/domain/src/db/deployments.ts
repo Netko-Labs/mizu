@@ -47,7 +47,7 @@ export const deploymentTable = pgTable(
     // no cross-domain FK (nagare trusts the JWT).
     triggeredBy: text('triggered_by'),
     containerId: text('container_id'),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
   },

@@ -27,10 +27,10 @@ export const envGroupTable = pgTable(
     values: text('values'), // Encrypted JSON string of key-value pairs
     isSecret: boolean('is_secret').default(false).notNull(),
     canvasPosition: jsonb('canvas_position').default({ x: 0, y: 0 }).notNull(),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
-    updatedAt: timestamp('updated_at')
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
@@ -67,7 +67,7 @@ export const serviceEnvGroupTable = pgTable(
       .notNull()
       .references(() => envGroupTable.id, { onDelete: 'cascade' }),
     prefix: text('prefix'), // Optional prefix for env var names
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
   },

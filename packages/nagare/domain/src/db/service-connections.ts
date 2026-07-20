@@ -54,7 +54,7 @@ export const serviceConnectionTable = pgTable(
     targetType: text('target_type', { enum: targetTypeEnum }).notNull(),
     connectionType: text('connection_type', { enum: connectionTypeEnum }).notNull(),
     envVarName: text('env_var_name'),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
   },

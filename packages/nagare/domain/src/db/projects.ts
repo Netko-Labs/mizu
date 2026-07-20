@@ -27,10 +27,10 @@ export const projectTable = pgTable(
     description: text('description'),
     settings: jsonb('settings').default({}).notNull(),
     networkId: text('network_id'),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
-    updatedAt: timestamp('updated_at')
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),

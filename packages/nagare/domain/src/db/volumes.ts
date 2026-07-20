@@ -28,8 +28,8 @@ export const volumeTable = pgTable(
     volumeName: text('volume_name'),
     path: text('path'),
     sizeBytes: bigint('size_bytes', { mode: 'bigint' }),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),

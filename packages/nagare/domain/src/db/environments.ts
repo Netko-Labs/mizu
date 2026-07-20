@@ -24,10 +24,10 @@ export const environmentTable = pgTable(
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     isDefault: boolean('is_default').default(false).notNull(),
-    createdAt: timestamp('created_at')
+    createdAt: timestamp('created_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .notNull(),
-    updatedAt: timestamp('updated_at')
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
       .notNull(),
