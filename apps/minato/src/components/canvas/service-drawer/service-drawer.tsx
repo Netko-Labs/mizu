@@ -61,7 +61,7 @@ export function ServiceDrawer({
       >
         <TabsList
           variant="line"
-          className="w-full justify-start gap-2 overflow-x-auto border-b border-border px-3"
+          className="w-full justify-start gap-1.5 border-b border-border px-3"
         >
           {clusters.map((cluster, clusterIndex) => (
             <Fragment key={cluster[0]?.id ?? clusterIndex}>
@@ -75,14 +75,13 @@ export function ServiceDrawer({
                   }
                 />
               )}
-              {cluster.map(({ id, label, icon: TabIcon, implemented }) => (
+              {cluster.map(({ id, label, implemented }) => (
                 <TabsTrigger
                   key={id}
                   value={id}
                   disabled={!implemented}
-                  className="flex-none px-1 py-2 text-xs"
+                  className="flex-none px-1.5 py-2 text-xs"
                 >
-                  <TabIcon className="size-3.5" />
                   {label}
                 </TabsTrigger>
               ))}
