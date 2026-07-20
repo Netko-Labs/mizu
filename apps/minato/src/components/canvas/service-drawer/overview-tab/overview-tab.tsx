@@ -1,4 +1,10 @@
-import type { IngressRule, PortMapping, ServiceSourceType, VolumeMount } from '@mizu/nagare-domain'
+import type {
+  IngressRule,
+  PortMapping,
+  ServiceSettings,
+  ServiceSourceType,
+  VolumeMount,
+} from '@mizu/nagare-domain'
 import { useQuery } from '@tanstack/react-query'
 import { PropertyLine, SourceTypeIcon } from '@/components/canvas/shared'
 import { Badge } from '@/components/ui/badge'
@@ -17,13 +23,14 @@ export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
   const ports = (service.ports ?? []) as PortMapping[]
   const volumes = (service.volumeMounts ?? []) as VolumeMount[]
   const persistentVolumes = (sourceConfig.volumes as string[] | undefined) ?? []
-  const ingressRules =
-    ((service.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
+  const serviceSettings = (service.settings ?? {}) as ServiceSettings
+  const ingressRules = serviceSettings.ingressRules ?? []
+  const exposed = serviceSettings.exposed === true
   const running = service.status === 'running'
   const autoUrl = useIngressUrl(
     service.name,
     projectSlug,
-    running && ports.length > 0 && ingressRules.length === 0,
+    running && exposed && ports.length > 0 && ingressRules.length === 0,
   )
   const { data: instanceSettings } = useQuery(instanceSettingsQueries.get())
   const baseDomain = instanceSettings?.domain || 'localhost'
@@ -99,6 +106,11 @@ export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
             >
               {autoUrl}
             </a>
+          )}
+          {ingressRules.length === 0 && !exposed && (
+            <div className="text-[11px] text-muted-foreground">
+              Private — expose it or add ingress rules in Settings.
+            </div>
           )}
         </CardContent>
       </Card>

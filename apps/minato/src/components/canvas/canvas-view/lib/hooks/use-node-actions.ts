@@ -99,11 +99,8 @@ export function useNodeActions(projectId: string, onNodeDeleted?: () => void) {
           case 'updateSourceConfig':
             updateServiceMutation.mutate({ serviceId: nodeId, sourceConfig: action.sourceConfig })
             break
-          case 'updateIngress':
-            updateServiceMutation.mutate({
-              serviceId: nodeId,
-              settings: { ingressRules: action.ingressRules },
-            })
+          case 'updateSettings':
+            updateServiceMutation.mutate({ serviceId: nodeId, settings: action.settings })
             break
           case 'delete':
             deleteServiceMutation.mutate(nodeId)

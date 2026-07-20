@@ -1,4 +1,4 @@
-import type { IngressRule, PortMapping } from '@mizu/nagare-domain'
+import type { PortMapping, ServiceSettings } from '@mizu/nagare-domain'
 import { useState } from 'react'
 import { EditablePropertyLine, PropertyLine } from '@/components/canvas/shared'
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
 import { useIngressUrl } from '../lib'
 import type { SettingsTabProps } from './lib/types'
 import { ServiceIngressEditor } from './service-ingress-editor'
@@ -30,14 +31,23 @@ export function SettingsTab({
   const entity = nodeType === 'service' ? service : database
   const sourceConfig = (service?.sourceConfig ?? {}) as Record<string, unknown>
   const ports = ((service?.ports ?? []) as PortMapping[]).map((p) => p.container)
-  const ingressRules =
-    ((service?.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
+  const serviceSettings = (service?.settings ?? {}) as ServiceSettings
+  const ingressRules = serviceSettings.ingressRules ?? []
+  const exposed = serviceSettings.exposed === true
   const autoUrl = useIngressUrl(
     service?.name ?? '',
     projectSlug,
-    !!service && service.status === 'running' && ports.length > 0 && ingressRules.length === 0,
+    !!service &&
+      service.status === 'running' &&
+      exposed &&
+      ports.length > 0 &&
+      ingressRules.length === 0,
   )
   if (!entity) return null
+
+  // Always merge from the current settings so one key never clobbers another.
+  const saveSettings = (patch: Partial<ServiceSettings>) =>
+    onAction?.({ type: 'updateSettings', settings: { ...serviceSettings, ...patch } })
 
   return (
     <div className="space-y-4 p-4">
@@ -93,16 +103,34 @@ export function SettingsTab({
           <CardHeader>
             <CardTitle className="text-sm">Networking</CardTitle>
             <CardDescription className="text-xs">
-              Public ingress routes for this service's ports. Rules replace the auto-derived host.
+              Services are private by default. Expose publicly for the auto host, or add ingress
+              rules (rules replace the auto host and expose on their own).
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-md border border-border bg-background/60 px-2.5 py-2">
+              <div className="text-xs text-foreground/90">
+                Expose publicly
+                <div className="text-[11px] text-muted-foreground">
+                  {exposed
+                    ? 'Reachable at the auto-derived host'
+                    : ingressRules.length > 0
+                      ? 'Private auto host — ingress rules still apply'
+                      : 'Only reachable inside the project network'}
+                </div>
+              </div>
+              <Switch
+                checked={exposed}
+                onCheckedChange={(checked) => saveSettings({ exposed: checked })}
+                disabled={isActionPending}
+              />
+            </div>
             <ServiceIngressEditor
               rules={ingressRules}
               ports={ports}
               running={service.status === 'running'}
               autoUrl={autoUrl}
-              onChange={(rules) => onAction?.({ type: 'updateIngress', ingressRules: rules })}
+              onChange={(rules) => saveSettings({ ingressRules: rules })}
             />
           </CardContent>
         </Card>

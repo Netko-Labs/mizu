@@ -105,7 +105,8 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
     // Per-project base-domain override; falls back to the instance base domain.
     const projectSettings = (service.projectSettings ?? {}) as ProjectSettings
     const hostDomain = projectSettings.domain || baseDomain
-    const rules = ((service.settings ?? {}) as ServiceSettings).ingressRules ?? []
+    const serviceSettings = (service.settings ?? {}) as ServiceSettings
+    const rules = serviceSettings.ingressRules ?? []
 
     if (rules.length > 0) {
       // Opt-in override: a service with manual rules is served ONLY on those
@@ -123,7 +124,10 @@ export async function buildIngressConfig(): Promise<CaddyConfig> {
       continue
     }
 
-    // Auto host: the first port on `{service}-{namespace}.{hostDomain}`.
+    // Auto host: the first port on `{service}-{namespace}.{hostDomain}` —
+    // opt-in only (services are private by default; a manual rule above is
+    // its own explicit exposure).
+    if (serviceSettings.exposed !== true) continue
     const containerPort = ports[0]?.container
     if (!containerPort) continue
     routes.push({

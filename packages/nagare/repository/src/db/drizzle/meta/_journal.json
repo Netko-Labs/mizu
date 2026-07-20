@@ -36,6 +36,13 @@
       "when": 1784523762400,
       "tag": "0004_damp_sage",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784530838879,
+      "tag": "0005_expose_existing_services",
+      "breakpoints": true
     }
   ]
 }

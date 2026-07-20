@@ -1,4 +1,4 @@
-import type { ConnectionType, IngressRule, ServiceConnection } from '@mizu/nagare-domain'
+import type { ConnectionType, ServiceConnection, ServiceSettings } from '@mizu/nagare-domain'
 import type { ProjectWithServices, Serialized } from '@/shared/api'
 import type { useCanvasMutations } from './hooks/use-canvas-mutations'
 
@@ -10,7 +10,7 @@ export type PropertyAction =
       type: 'updateCredentials'
       credentials: { username: string; password: string; database: string }
     }
-  | { type: 'updateIngress'; ingressRules: IngressRule[] }
+  | { type: 'updateSettings'; settings: ServiceSettings }
   | { type: 'delete' }
   | { type: 'deploy' }
   | { type: 'start' }
