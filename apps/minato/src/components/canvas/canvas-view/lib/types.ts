@@ -10,8 +10,3 @@ export interface CanvasViewInnerProps extends CanvasViewProps {
   activeEnvironmentId: string
   onEnvironmentChange: (id: string) => void
 }
-
-export interface LogsTarget {
-  nodeId: string
-  nodeType: 'service' | 'database'
-}

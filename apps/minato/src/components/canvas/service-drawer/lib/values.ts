@@ -2,8 +2,10 @@ import type { DatabaseStatus, DatabaseType, ServiceStatus } from '@mizu/nagare-d
 import {
   IconAdjustments,
   IconChartLine,
+  IconFolder,
   IconHistory,
   IconLayoutDashboard,
+  IconPrompt,
   IconTerminal2,
   IconVariable,
 } from '@tabler/icons-react'
@@ -43,6 +45,20 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
     label: 'Logs',
     icon: IconTerminal2,
     appliesTo: ['service', 'database'],
+    implemented: true,
+  },
+  {
+    id: 'console',
+    label: 'Console',
+    icon: IconPrompt,
+    appliesTo: ['service'],
+    implemented: true,
+  },
+  {
+    id: 'files',
+    label: 'Files',
+    icon: IconFolder,
+    appliesTo: ['service'],
     implemented: true,
   },
   {

@@ -12,6 +12,8 @@ export const ACTIVITY_TYPES = [
   'service.restart',
   'service.rollback',
   'service.env-update',
+  'service.exec',
+  'service.file-edit',
   'database.create',
   'database.update',
   'database.delete',

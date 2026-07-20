@@ -1,3 +1,5 @@
+export * from './console-file-schemas'
+export * from './console-file-types'
 export * from './create-service-schema'
 export * from './ingress-rule-schema'
 export * from './port-mapping-schema'

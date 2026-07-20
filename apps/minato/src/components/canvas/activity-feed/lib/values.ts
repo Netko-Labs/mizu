@@ -1,6 +1,7 @@
 import type { ActivityType } from '@mizu/nagare-domain'
 import {
   type Icon,
+  IconFileText,
   IconPencil,
   IconPlayerPlay,
   IconPlayerStop,
@@ -8,6 +9,7 @@ import {
   IconRefresh,
   IconRocket,
   IconRotateClockwise2,
+  IconTerminal2,
   IconTrash,
   IconVariable,
 } from '@tabler/icons-react'
@@ -33,6 +35,12 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
     color: 'text-amber-400',
   },
   'service.env-update': { icon: IconVariable, verb: 'variables updated', color: 'text-primary' },
+  'service.exec': {
+    icon: IconTerminal2,
+    verb: 'console command run',
+    color: 'text-muted-foreground',
+  },
+  'service.file-edit': { icon: IconFileText, verb: 'file edited', color: 'text-muted-foreground' },
   'database.create': { icon: IconPlus, verb: 'created', color: 'text-emerald-400' },
   'database.update': { icon: IconPencil, verb: 'updated', color: 'text-muted-foreground' },
   'database.delete': { icon: IconTrash, verb: 'deleted', color: 'text-red-400' },

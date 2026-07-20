@@ -1,6 +1,8 @@
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ConsoleTab } from './console-tab'
 import { DeploymentsTab } from './deployments-tab'
+import { FilesTab } from './files-tab'
 import { type DrawerTab, type ServiceDrawerProps, TAB_DEFINITIONS, useServiceDrawer } from './lib'
 import { LogsTab } from './logs-tab'
 import { MetricsTab } from './metrics-tab'
@@ -45,9 +47,17 @@ export function ServiceDrawer({
         onValueChange={(value) => setTab(value as DrawerTab)}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        <TabsList variant="line" className="w-full justify-start gap-3 border-b border-border px-4">
+        <TabsList
+          variant="line"
+          className="w-full justify-start gap-2.5 overflow-x-auto border-b border-border px-3"
+        >
           {tabs.map(({ id, label, icon: TabIcon, implemented }) => (
-            <TabsTrigger key={id} value={id} disabled={!implemented} className="flex-none py-2">
+            <TabsTrigger
+              key={id}
+              value={id}
+              disabled={!implemented}
+              className="flex-none px-1 py-2 text-xs"
+            >
               <TabIcon className="size-3.5" />
               {label}
             </TabsTrigger>
@@ -89,6 +99,18 @@ export function ServiceDrawer({
         <TabsContent value="logs" className="min-h-0">
           <LogsTab nodeType={nodeType} entityId={nodeId} />
         </TabsContent>
+
+        {nodeType === 'service' && service && (
+          <TabsContent value="console" className="min-h-0">
+            <ConsoleTab service={service} />
+          </TabsContent>
+        )}
+
+        {nodeType === 'service' && service && (
+          <TabsContent value="files" className="min-h-0">
+            <FilesTab service={service} />
+          </TabsContent>
+        )}
 
         <TabsContent value="settings" className="min-h-0">
           <ScrollArea className="h-full">

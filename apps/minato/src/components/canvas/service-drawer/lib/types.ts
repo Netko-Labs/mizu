@@ -3,7 +3,15 @@ import type { Icon } from '@tabler/icons-react'
 import type { PropertyAction } from '@/components/canvas/lib'
 import type { Serialized } from '@/shared/api'
 
-export type DrawerTab = 'overview' | 'deployments' | 'variables' | 'metrics' | 'logs' | 'settings'
+export type DrawerTab =
+  | 'overview'
+  | 'deployments'
+  | 'variables'
+  | 'metrics'
+  | 'logs'
+  | 'console'
+  | 'files'
+  | 'settings'
 
 export type DrawerNodeType = 'service' | 'database'
 

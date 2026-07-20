@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { DrawerTab } from '@/components/canvas/service-drawer'
-import type { LogsTarget } from '../types'
 
 /** Overlay/panel visibility + node selection — local, ephemeral view state. */
 export function useCanvasOverlays() {
@@ -12,7 +11,6 @@ export function useCanvasOverlays() {
   const [activityOpen, setActivityOpen] = useState(false)
   // Which drawer tab to open the selection on (null = default Overview).
   const [drawerTab, setDrawerTab] = useState<DrawerTab | null>(null)
-  const [logsTarget, setLogsTarget] = useState<LogsTarget | null>(null)
 
   return {
     sidebarOpen,
@@ -29,7 +27,5 @@ export function useCanvasOverlays() {
     setActivityOpen,
     drawerTab,
     setDrawerTab,
-    logsTarget,
-    setLogsTarget,
   }
 }

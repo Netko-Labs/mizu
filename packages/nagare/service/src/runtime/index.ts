@@ -19,6 +19,7 @@ export {
   resolveConnectionEnvVars,
   resolveContainerIp,
 } from './env-resolution'
+export { execCommandInContainer } from './exec'
 export { pullImage, qualifyImageRef } from './images'
 export { deployNamespace, ensureDeployNetwork, listNetworkNames, sanitizeName } from './networks'
 export {

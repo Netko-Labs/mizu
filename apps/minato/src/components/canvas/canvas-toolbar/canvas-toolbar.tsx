@@ -7,7 +7,6 @@ import {
   IconHistory,
   IconLayoutSidebar,
   IconSettings,
-  IconTerminal,
 } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import { useReactFlow } from '@xyflow/react'
@@ -25,11 +24,9 @@ interface CanvasToolbarProps {
   nodeCount: number
   sidebarOpen: boolean
   yamlOpen: boolean
-  logsOpen: boolean
   activityOpen: boolean
   onToggleSidebar: () => void
   onToggleYaml: () => void
-  onToggleLogs: () => void
   onToggleActivity: () => void
   onOpenSettings: () => void
   onDeploy: () => void
@@ -75,11 +72,9 @@ export function CanvasToolbar({
   nodeCount,
   sidebarOpen,
   yamlOpen,
-  logsOpen,
   activityOpen,
   onToggleSidebar,
   onToggleYaml,
-  onToggleLogs,
   onToggleActivity,
   onOpenSettings,
   onDeploy,
@@ -139,15 +134,6 @@ export function CanvasToolbar({
           label="YAML"
         >
           <IconCode className="size-3.5" />
-        </ToolbarButton>
-
-        <ToolbarButton
-          active={logsOpen}
-          onClick={onToggleLogs}
-          title="Toggle logs panel"
-          label="Logs"
-        >
-          <IconTerminal className="size-3.5" />
         </ToolbarButton>
 
         <ToolbarButton

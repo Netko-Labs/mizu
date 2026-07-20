@@ -1,9 +1,12 @@
 import {
   CreateServiceSchema,
+  ExecCommandSchema,
   PositionSchema,
+  ServiceFileQuerySchema,
   ServiceListQuerySchema,
   UpdateEnvVarsSchema,
   UpdateServiceSchema,
+  WriteServiceFileSchema,
 } from '@mizu/nagare-domain'
 import {
   assertProjectOwned,
@@ -11,11 +14,14 @@ import {
   createService,
   deleteService,
   deployService,
+  execInService,
   getService,
   getServiceEnvVars,
   getServiceMetrics,
   getServiceStatus,
+  listServiceFiles,
   listServices,
+  readServiceFile,
   resolveEnvironmentId,
   restartService,
   startService,
@@ -23,6 +29,7 @@ import {
   updateCanvasPosition,
   updateService,
   updateServiceEnvVars,
+  writeServiceFile,
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
@@ -83,6 +90,45 @@ export const servicesRoutes = new Elysia({ name: 'services', prefix: '/services'
       logServiceActivity(service, user, 'service.env-update', {
         varsChanged: Object.keys(body).length,
       })
+      return result
+    },
+  )
+  // 🖥 one-shot console command inside the running container
+  .post(
+    '/:serviceId/exec',
+    { auth: true, body: ExecCommandSchema },
+    async ({ user, params, body }) => {
+      const service = await assertServiceOwned(params.serviceId, user.organizationId)
+      logServiceActivity(service, user, 'service.exec', { command: body.command.slice(0, 120) })
+      return execInService(params.serviceId, body.command)
+    },
+  )
+  // 📁 browse the service's host file area (config files + persistent volumes)
+  .get(
+    '/:serviceId/files',
+    { auth: true, query: ServiceFileQuerySchema },
+    async ({ user, params, query }) => {
+      await assertServiceOwned(params.serviceId, user.organizationId)
+      return listServiceFiles(params.serviceId, query.path)
+    },
+  )
+  // 📄 read a file for the in-drawer editor
+  .get(
+    '/:serviceId/files/content',
+    { auth: true, query: ServiceFileQuerySchema },
+    async ({ user, params, query }) => {
+      await assertServiceOwned(params.serviceId, user.organizationId)
+      return readServiceFile(params.serviceId, query.path)
+    },
+  )
+  // ✏️ write a file (bind-mounted paths reflect in the container immediately)
+  .put(
+    '/:serviceId/files/content',
+    { auth: true, body: WriteServiceFileSchema },
+    async ({ user, params, body }) => {
+      const service = await assertServiceOwned(params.serviceId, user.organizationId)
+      const result = await writeServiceFile(params.serviceId, body.path, body.content)
+      logServiceActivity(service, user, 'service.file-edit', { path: result.path })
       return result
     },
   )

@@ -7,7 +7,6 @@ import { CanvasProvider } from '@/components/canvas/canvas-provider'
 import { CanvasSidebar } from '@/components/canvas/canvas-sidebar'
 import { CanvasToolbar } from '@/components/canvas/canvas-toolbar'
 import { DeployDialog } from '@/components/canvas/deploy-dialog'
-import { LogsPanel } from '@/components/canvas/logs-panel'
 import { ProjectSettingsDialog } from '@/components/canvas/project-settings-dialog'
 import { ServiceDrawer } from '@/components/canvas/service-drawer'
 import { YamlPreviewPanel } from '@/components/canvas/yaml-preview'
@@ -95,8 +94,6 @@ function CanvasViewInner({
     setActivityOpen,
     drawerTab,
     setDrawerTab,
-    logsTarget,
-    setLogsTarget,
   } = overlays
 
   return (
@@ -112,14 +109,10 @@ function CanvasViewInner({
           nodeCount={(project?.services.length ?? 0) + (project?.databases.length ?? 0)}
           sidebarOpen={sidebarOpen}
           yamlOpen={yamlOpen}
-          logsOpen={!!logsTarget}
           activityOpen={activityOpen}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           onToggleYaml={() => setYamlOpen(!yamlOpen)}
           onToggleActivity={() => setActivityOpen(!activityOpen)}
-          onToggleLogs={() =>
-            setLogsTarget((prev) => (prev ? null : { nodeId: '', nodeType: 'service' }))
-          }
           onOpenSettings={() => setSettingsOpen(true)}
           onDeploy={() => setDeployOpen(true)}
         />
@@ -145,8 +138,7 @@ function CanvasViewInner({
             onEditProperties={(nodeId) => setSelectedNodeId(nodeId)}
             onNodeAction={handleNodeAction}
             onViewLogs={(nodeId) => {
-              // Node-level log actions open the drawer on its Logs tab; the
-              // toolbar toggle keeps the project-level bottom tail.
+              // Log actions open the drawer on its Logs tab.
               setSelectedNodeId(nodeId)
               setDrawerTab('logs')
             }}
@@ -194,7 +186,7 @@ function CanvasViewInner({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 40 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="absolute top-14 right-3 bottom-3 z-30 w-[620px] max-w-[calc(100vw-360px)] overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur-md"
+            className="absolute top-14 right-3 bottom-3 z-30 w-[680px] max-w-[calc(100vw-360px)] overflow-hidden rounded-xl border border-border bg-card/95 shadow-2xl backdrop-blur-md"
           >
             <ServiceDrawer
               nodeId={selectedNodeId}
@@ -241,30 +233,6 @@ function CanvasViewInner({
                 <YamlPreviewPanel mizuYaml={generatedFiles?.['mizu.yml'] ?? ''} />
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Logs panel */}
-      <AnimatePresence>
-        {logsTarget && (
-          <motion.div
-            initial={{ y: 250, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 250, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute inset-x-0 bottom-0 z-20 h-[250px]"
-          >
-            <LogsPanel
-              serviceId={logsTarget.nodeType === 'service' ? logsTarget.nodeId : undefined}
-              databaseId={logsTarget.nodeType === 'database' ? logsTarget.nodeId : undefined}
-              entityName={
-                logsTarget.nodeType === 'service'
-                  ? findService(logsTarget.nodeId)?.name
-                  : findDatabase(logsTarget.nodeId)?.name
-              }
-              onClose={() => setLogsTarget(null)}
-            />
           </motion.div>
         )}
       </AnimatePresence>
