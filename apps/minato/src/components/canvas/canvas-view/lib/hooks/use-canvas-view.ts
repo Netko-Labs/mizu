@@ -33,9 +33,12 @@ export function useCanvasView(projectId: string, environmentId?: string) {
 
   const handleNodeSelect = useCallback(
     (nodeId: string | null) => {
+      // Selecting a node opens the service drawer — the project panel shares
+      // the right edge, so it closes.
+      if (nodeId) overlays.setProjectTab(null)
       overlays.setSelectedNodeId(nodeId)
     },
-    [overlays.setSelectedNodeId],
+    [overlays.setSelectedNodeId, overlays.setProjectTab],
   )
 
   const handleNodeDragStop = useCallback(
