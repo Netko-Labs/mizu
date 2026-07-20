@@ -15,12 +15,16 @@ export type DrawerTab =
 
 export type DrawerNodeType = 'service' | 'database'
 
+export type DrawerTabGroup = 'main' | 'manage' | 'runtime' | 'config'
+
 export interface TabDefinition {
   id: DrawerTab
   label: string
   icon: Icon
   appliesTo: DrawerNodeType[]
   implemented: boolean
+  /** Visual cluster in the tab strip (separators between clusters). */
+  group: DrawerTabGroup
 }
 
 export interface StatusMeta {

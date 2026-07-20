@@ -14,6 +14,7 @@ import type { StatusMeta, TabDefinition } from './types'
 export const TAB_DEFINITIONS: TabDefinition[] = [
   {
     id: 'overview',
+    group: 'main',
     label: 'Overview',
     icon: IconLayoutDashboard,
     appliesTo: ['service', 'database'],
@@ -21,6 +22,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'deployments',
+    group: 'manage',
     label: 'Deployments',
     icon: IconHistory,
     appliesTo: ['service'],
@@ -28,6 +30,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'variables',
+    group: 'manage',
     label: 'Variables',
     icon: IconVariable,
     appliesTo: ['service'],
@@ -35,6 +38,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'metrics',
+    group: 'runtime',
     label: 'Metrics',
     icon: IconChartLine,
     appliesTo: ['service'],
@@ -42,6 +46,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'logs',
+    group: 'runtime',
     label: 'Logs',
     icon: IconTerminal2,
     appliesTo: ['service', 'database'],
@@ -49,6 +54,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'console',
+    group: 'runtime',
     label: 'Console',
     icon: IconPrompt,
     appliesTo: ['service'],
@@ -56,6 +62,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'files',
+    group: 'runtime',
     label: 'Files',
     icon: IconFolder,
     appliesTo: ['service'],
@@ -63,6 +70,7 @@ export const TAB_DEFINITIONS: TabDefinition[] = [
   },
   {
     id: 'settings',
+    group: 'config',
     label: 'Settings',
     icon: IconAdjustments,
     appliesTo: ['service', 'database'],
