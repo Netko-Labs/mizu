@@ -13,6 +13,7 @@ import { projectsRoutes } from './routes/projects'
 import { servicesRoutes } from './routes/services'
 import { systemRoutes } from './routes/system'
 import { templatesRoutes } from './routes/templates'
+import { terminalRoutes } from './routes/terminal'
 
 const logger = createLogger('nagare-api')
 const allowedOrigins = nagareEnvConfig.app.cors
@@ -73,5 +74,6 @@ export const app = new Elysia()
   .use(systemRoutes)
   .use(templatesRoutes)
   .use(logsRoutes)
+  .use(terminalRoutes)
 
 export type App = typeof app

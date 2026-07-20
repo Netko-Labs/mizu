@@ -29,5 +29,6 @@ export {
   supportsStatsCommand,
 } from './stats'
 export { ensureRuntimeRunning, getRuntimeInfo, isRuntimeAvailable } from './system'
+export { openContainerTerminal, type TerminalSession } from './terminal'
 export * from './types'
 export { createVolume } from './volumes'
