@@ -8,11 +8,11 @@ import {
 } from '@mizu/nagare-service'
 import { Elysia } from 'elysia'
 import { authPlugin } from '../setup'
+import { TerminalLineEditor } from '../shared/terminal-line-editor'
 
 interface Session {
   terminal: TerminalSession
-  /** Current unsubmitted line (no PTY, so we cook it here). */
-  buffer: string
+  editor: TerminalLineEditor
 }
 
 // Keyed on the client-supplied `cid` (Elysia 2's ws.id is unreliable).
@@ -20,9 +20,10 @@ const sessions = new Map<string, Session>()
 
 /**
  * Interactive shell over WebSocket for the drawer's Console (wterm frontend).
- * There's no container-side PTY (see runtime/terminal.ts), so this cooks the
- * line locally: echo keystrokes, handle backspace/Ctrl-C, and forward the whole
- * line to the shell on Enter. Shell output streams back raw (ANSI preserved).
+ * There's no container-side PTY (see runtime/terminal.ts), so a line editor
+ * cooks keystrokes here (echo, backspace, history, escape-sequence handling)
+ * and forwards whole lines to the shell on Enter. Shell output streams back
+ * with LF normalized to CRLF for the terminal (ANSI colors preserved).
  */
 export const terminalRoutes = new Elysia({ name: 'terminal' })
   .use(authPlugin)
@@ -52,13 +53,17 @@ export const terminalRoutes = new Elysia({ name: 'terminal' })
 
       const terminal = openContainerTerminal(
         service.containerId,
-        (chunk) => ws.send(chunk),
+        (chunk) => ws.send(chunk.replace(/\r?\n/g, '\r\n')),
         () => {
           ws.send('\r\n\x1b[90m[session ended]\x1b[0m\r\n')
           ws.close(1000, 'Shell exited')
         },
       )
-      sessions.set(cid, { terminal, buffer: '' })
+      const editor = new TerminalLineEditor({
+        echo: (data) => ws.send(data),
+        submit: (line) => terminal.send(line),
+      })
+      sessions.set(cid, { terminal, editor })
       ws.send(
         '\x1b[90mConnected — interactive sh (no PTY: full-screen apps unsupported)\x1b[0m\r\n',
       )
@@ -66,27 +71,7 @@ export const terminalRoutes = new Elysia({ name: 'terminal' })
     message(ws, message) {
       const session = sessions.get(ws.query.cid)
       if (!session) return
-      const input = typeof message === 'string' ? message : String(message)
-
-      for (const char of input) {
-        if (char === '\r' || char === '\n') {
-          ws.send('\r\n')
-          session.terminal.send(session.buffer)
-          session.buffer = ''
-        } else if (char === '\x7f' || char === '\x08') {
-          if (session.buffer.length > 0) {
-            session.buffer = session.buffer.slice(0, -1)
-            ws.send('\b \b')
-          }
-        } else if (char === '\x03') {
-          // Ctrl-C: abandon the current line (can't signal the shell over a pipe)
-          ws.send('^C\r\n')
-          session.buffer = ''
-        } else if (char >= ' ') {
-          session.buffer += char
-          ws.send(char)
-        }
-      }
+      session.editor.feed(typeof message === 'string' ? message : String(message))
     },
     close(ws) {
       const session = sessions.get(ws.query.cid)
