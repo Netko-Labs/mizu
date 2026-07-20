@@ -92,7 +92,12 @@ export function ServiceDrawer({
         <TabsContent value="overview" className="min-h-0">
           <ScrollArea className="h-full">
             {nodeType === 'service' && service ? (
-              <OverviewTab service={service} projectSlug={projectSlug} onAction={onAction} />
+              <OverviewTab
+                service={service}
+                projectSlug={projectSlug}
+                onAction={onAction}
+                onOpenTab={setTab}
+              />
             ) : database ? (
               <DatabaseOverview database={database} onAction={onAction} />
             ) : null}

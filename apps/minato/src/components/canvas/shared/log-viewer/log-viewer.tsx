@@ -53,7 +53,7 @@ export function LogViewer({ serviceId, databaseId, className }: LogViewerProps) 
             <div
               key={`${i}-${line.slice(0, 20)}`}
               className={cn(
-                'whitespace-pre-wrap break-all',
+                'whitespace-pre-wrap break-all rounded px-1 -mx-1 transition-colors hover:bg-foreground/[0.04]',
                 isError ? 'text-red-400/80' : 'text-neutral-400',
               )}
             >

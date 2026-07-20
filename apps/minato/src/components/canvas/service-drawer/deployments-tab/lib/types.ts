@@ -8,6 +8,8 @@ export interface DeploymentsTabProps {
 export interface DeploymentItemProps {
   deployment: Serialized<DeploymentListItem>
   isCurrent: boolean
+  /** Last row hides the trailing rail segment. */
+  isLast: boolean
   onRollback: (deploymentId: string) => void
   rollbackPending: boolean
 }

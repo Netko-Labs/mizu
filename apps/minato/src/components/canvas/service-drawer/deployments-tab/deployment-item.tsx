@@ -5,22 +5,29 @@ import { cn } from '@/lib/utils'
 import { deploymentImageRef, formatRelativeTime } from './lib'
 import type { DeploymentItemProps } from './lib/types'
 
-/** One history row: status dot, image ref, trigger, time, rollback. */
+/** One timeline row: rail dot, image ref, trigger + time, rollback. */
 export function DeploymentItem({
   deployment,
   isCurrent,
+  isLast,
   onRollback,
   rollbackPending,
 }: DeploymentItemProps) {
   const ok = deployment.status === 'success'
 
   return (
-    <div className="flex items-center gap-2.5 rounded-md border border-border bg-background/60 px-3 py-2">
-      <span
-        className={cn('size-2 shrink-0 rounded-full', ok ? 'bg-emerald-400' : 'bg-red-400')}
-        title={deployment.status}
-      />
-      <div className="min-w-0 flex-1">
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <span
+          className={cn(
+            'mt-1 size-2.5 shrink-0 rounded-full ring-2 ring-background',
+            ok ? 'bg-emerald-400' : 'bg-red-400',
+          )}
+          title={deployment.status}
+        />
+        {!isLast && <span className="w-px flex-1 bg-border" />}
+      </div>
+      <div className="min-w-0 flex-1 pb-4">
         <div className="flex items-center gap-2">
           <span className="truncate font-mono text-[11px] text-foreground/90">
             {deploymentImageRef(deployment.sourceConfig)}
@@ -30,8 +37,20 @@ export function DeploymentItem({
               Current
             </Badge>
           )}
+          {ok && !isCurrent && (
+            <Button
+              variant="outline"
+              size="xs"
+              disabled={rollbackPending}
+              onClick={() => onRollback(deployment.id)}
+              className="ml-auto shrink-0"
+            >
+              <IconRotateClockwise2 className="size-3" />
+              Rollback
+            </Button>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span className="font-mono">{deployment.id.slice(0, 8)}</span>
           <span>·</span>
           <span>{deployment.trigger}</span>
@@ -42,18 +61,6 @@ export function DeploymentItem({
           <div className="mt-0.5 truncate text-[11px] text-red-400/80">{deployment.error}</div>
         )}
       </div>
-      {ok && !isCurrent && (
-        <Button
-          variant="outline"
-          size="xs"
-          disabled={rollbackPending}
-          onClick={() => onRollback(deployment.id)}
-          className="shrink-0"
-        >
-          <IconRotateClockwise2 className="size-3" />
-          Rollback
-        </Button>
-      )}
     </div>
   )
 }

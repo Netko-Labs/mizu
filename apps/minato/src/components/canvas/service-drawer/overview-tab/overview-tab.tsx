@@ -1,27 +1,22 @@
-import type {
-  IngressRule,
-  PortMapping,
-  ServiceSettings,
-  ServiceSourceType,
-  VolumeMount,
-} from '@mizu/nagare-domain'
+import type { IngressRule, PortMapping, ServiceSettings, VolumeMount } from '@mizu/nagare-domain'
 import { useQuery } from '@tanstack/react-query'
-import { PropertyLine, SourceTypeIcon } from '@/components/canvas/shared'
+import { PropertyLine } from '@/components/canvas/shared'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { instanceSettingsQueries } from '@/shared/api'
 import { sanitizeResourceName, useIngressUrl } from '../lib'
+import { DrawerSection } from '../shared'
 import type { OverviewTabProps } from './lib'
+import { MetricsPreview } from './metrics-preview'
+import { OverviewStatRow } from './stat-row'
 
 /**
- * Read-only service summary: what's deployed and where it's reachable.
- * Editing (image, ingress rules, variables) lives in the Settings tab.
+ * Read-only service dashboard: a glance stat row, live metric previews, and
+ * where the service is reachable. Editing lives in the Settings tab.
  */
-export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
-  const sourceType = service.sourceType as ServiceSourceType
-  const sourceConfig = service.sourceConfig as Record<string, unknown>
+export function OverviewTab({ service, projectSlug, onOpenTab }: OverviewTabProps) {
   const ports = (service.ports ?? []) as PortMapping[]
   const volumes = (service.volumeMounts ?? []) as VolumeMount[]
+  const sourceConfig = (service.sourceConfig ?? {}) as Record<string, unknown>
   const persistentVolumes = (sourceConfig.volumes as string[] | undefined) ?? []
   const serviceSettings = (service.settings ?? {}) as ServiceSettings
   const ingressRules = serviceSettings.ingressRules ?? []
@@ -35,13 +30,6 @@ export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
   const { data: instanceSettings } = useQuery(instanceSettingsQueries.get())
   const baseDomain = instanceSettings?.domain || 'localhost'
 
-  const sourceRef =
-    sourceType === 'image'
-      ? `${(sourceConfig.image as string) ?? '?'}:${(sourceConfig.tag as string) ?? 'latest'}`
-      : sourceType === 'git'
-        ? ((sourceConfig.repository as string) ?? 'not set')
-        : ((sourceConfig.templateId as string) ?? 'not set')
-
   const ruleUrl = (rule: IngressRule): string => {
     const host =
       rule.hostType === 'subdomain' ? `${sanitizeResourceName(rule.host)}.${baseDomain}` : rule.host
@@ -49,116 +37,81 @@ export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
     return `${scheme}://${host}`
   }
 
+  const hasReachability = ingressRules.length > 0 || Boolean(autoUrl)
+
   return (
-    <div className="space-y-4 p-4">
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <SourceTypeIcon type={sourceType} />
-            Source
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PropertyLine label={sourceType} value={sourceRef} mono copyable />
-        </CardContent>
-      </Card>
+    <div className="space-y-3 p-4">
+      <OverviewStatRow service={service} exposed={exposed} hasIngress={ingressRules.length > 0} />
 
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle className="text-sm">Networking</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {ports.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">No ports configured</div>
-          ) : (
-            <div className="space-y-1">
-              {ports.map((port, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px]"
-                >
-                  <span className="text-foreground/80">
-                    {port.host ?? 'auto'}:{port.container}
-                  </span>
-                  <span className="text-muted-foreground">{port.protocol ?? 'tcp'}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {ingressRules.map((rule) => (
-            <a
-              key={rule.id}
-              href={ruleUrl(rule)}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 truncate rounded-md border border-primary/20 bg-primary/5 px-2 py-1 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
-            >
-              <span className="truncate">{ruleUrl(rule)}</span>
-              <span className="ml-auto shrink-0 text-muted-foreground">:{rule.port}</span>
-            </a>
-          ))}
-          {ingressRules.length === 0 && autoUrl && (
-            <a
-              href={autoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block truncate rounded-md border border-primary/20 bg-primary/5 px-2 py-1 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
-            >
-              {autoUrl}
-            </a>
-          )}
-          {ingressRules.length === 0 && !exposed && (
-            <div className="text-[11px] text-muted-foreground">
-              Private — expose it or add ingress rules in Settings.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <MetricsPreview service={service} onOpenTab={onOpenTab} />
 
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle className="text-sm">Volumes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {volumes.length === 0 && persistentVolumes.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">No volumes mounted</div>
-          ) : (
-            <div className="space-y-1">
-              {persistentVolumes.map((path) => (
-                <div
-                  key={path}
-                  className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground/80"
-                >
-                  <span className="truncate">{path}</span>
-                  <Badge variant="secondary" className="ml-auto shrink-0 text-[9px] uppercase">
-                    persisted
-                  </Badge>
-                </div>
-              ))}
-              {volumes.map((vol, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 rounded-md border border-border bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground/80"
-                >
-                  <span className="truncate text-muted-foreground">{vol.volumeId}</span>
-                  <span className="text-muted-foreground">-&gt;</span>
-                  <span className="truncate">{vol.containerPath}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DrawerSection title="Reachability">
+        {hasReachability ? (
+          <div className="space-y-1.5">
+            {ingressRules.map((rule) => (
+              <a
+                key={rule.id}
+                href={ruleUrl(rule)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 truncate rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
+              >
+                <span className="truncate">{ruleUrl(rule)}</span>
+                <span className="ml-auto shrink-0 text-muted-foreground">:{rule.port}</span>
+              </a>
+            ))}
+            {ingressRules.length === 0 && autoUrl && (
+              <a
+                href={autoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block truncate rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
+              >
+                {autoUrl}
+              </a>
+            )}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Private — expose it or add ingress rules in Settings.
+          </p>
+        )}
+      </DrawerSection>
+
+      <DrawerSection title="Volumes">
+        {volumes.length === 0 && persistentVolumes.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No volumes mounted</p>
+        ) : (
+          <div className="space-y-1">
+            {persistentVolumes.map((path) => (
+              <div
+                key={path}
+                className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-2 py-1 font-mono text-[11px] text-foreground/80"
+              >
+                <span className="truncate">{path}</span>
+                <Badge variant="secondary" className="ml-auto shrink-0 text-[9px] uppercase">
+                  persisted
+                </Badge>
+              </div>
+            ))}
+            {volumes.map((vol) => (
+              <div
+                key={`${vol.volumeId}:${vol.containerPath}`}
+                className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-2 py-1 font-mono text-[11px] text-foreground/80"
+              >
+                <span className="truncate text-muted-foreground">{vol.volumeId}</span>
+                <span className="text-muted-foreground">-&gt;</span>
+                <span className="truncate">{vol.containerPath}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </DrawerSection>
 
       {service.containerId && (
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Container</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PropertyLine label="id" value={service.containerId} mono copyable />
-          </CardContent>
-        </Card>
+        <DrawerSection title="Container">
+          <PropertyLine label="id" value={service.containerId} mono copyable />
+        </DrawerSection>
       )}
     </div>
   )

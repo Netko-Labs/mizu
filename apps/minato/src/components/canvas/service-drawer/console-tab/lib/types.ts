@@ -1,4 +1,5 @@
 import type { Service } from '@mizu/nagare-domain'
+import type { TerminalHandle } from '@wterm/react'
 import type { RefObject } from 'react'
 import type { Serialized } from '@/shared/api'
 
@@ -6,22 +7,18 @@ export interface ConsoleTabProps {
   service: Serialized<Service>
 }
 
-export interface ConsoleEntry {
-  id: number
-  command: string
-  stdout: string
-  stderr: string
-  exitCode: number | null
-  timedOut: boolean
-  pending: boolean
+export type TerminalStatus = 'idle' | 'connecting' | 'open' | 'closed'
+
+export interface UseTerminalSocketOptions {
+  serviceId: string
+  /** Only connect while the container is running and the widget is mounted. */
+  enabled: boolean
+  /** The mounted <Terminal>'s imperative handle. */
+  handleRef: RefObject<TerminalHandle | null>
 }
 
-export interface UseConsoleResult {
-  entries: ConsoleEntry[]
-  command: string
-  setCommand: (command: string) => void
-  submit: () => void
-  scrollRef: RefObject<HTMLDivElement | null>
-  isRunning: boolean
-  clear: () => void
+export interface UseTerminalSocketResult {
+  status: TerminalStatus
+  /** Pass to <Terminal onData> — forwards keystrokes to the shell. */
+  onData: (data: string) => void
 }

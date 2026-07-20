@@ -1,4 +1,10 @@
-import type { DatabaseStatus, ServiceSourceType, ServiceStatus } from '@mizu/nagare-domain'
+import type {
+  DatabaseStatus,
+  PortMapping,
+  ServiceSettings,
+  ServiceSourceType,
+  ServiceStatus,
+} from '@mizu/nagare-domain'
 import {
   IconDatabase,
   IconPlayerPlay,
@@ -13,12 +19,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import {
   DATABASE_STATUS_META,
+  DATABASE_TYPE_LABELS,
+  formatCompactDuration,
   SERVICE_STATUS_META,
   type ServiceDrawerHeaderProps,
   type StatusMeta,
 } from './lib'
 
-/** Icon + editable name + status pill + lifecycle actions + close. */
+/** Icon + editable name + status pill + meta strip + lifecycle actions + close. */
 export function ServiceDrawerHeader({
   nodeType,
   service,
@@ -39,6 +47,8 @@ export function ServiceDrawerHeader({
       value: name,
       onSave: (next) => onAction?.({ type: 'updateName', name: next }),
     })
+
+  const { image, meta } = buildMeta(nodeType, service, database)
 
   const lifecycle: Array<{
     key: 'deploy' | 'start' | 'stop' | 'restart'
@@ -63,31 +73,42 @@ export function ServiceDrawerHeader({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave()
-              if (e.key === 'Escape') cancelEditing()
-            }}
-            onBlur={handleSave}
-            className="w-full border-b border-primary/50 bg-transparent text-sm font-semibold text-foreground outline-none"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={startEditing}
-            className="block max-w-full truncate text-left text-sm font-semibold text-foreground hover:text-primary"
-            title="Rename"
-          >
-            {name}
-          </button>
-        )}
-        <div className="flex items-center gap-1.5 text-[11px]">
-          <span className={cn('inline-block size-1.5 rounded-full', status.dot)} />
-          <span className={status.color}>{status.label}</span>
+        <div className="flex items-center gap-2">
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave()
+                if (e.key === 'Escape') cancelEditing()
+              }}
+              onBlur={handleSave}
+              className="w-full border-b border-primary/50 bg-transparent text-sm font-semibold text-foreground outline-none"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={startEditing}
+              className="block max-w-full truncate text-left text-sm font-semibold text-foreground hover:text-primary"
+              title="Rename"
+            >
+              {name}
+            </button>
+          )}
+          <span className="flex shrink-0 items-center gap-1.5 text-[11px]">
+            <span className={cn('inline-block size-1.5 rounded-full', status.dot)} />
+            <span className={status.color}>{status.label}</span>
+          </span>
+        </div>
+        <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+          {image && <span className="truncate font-mono text-foreground/70">{image}</span>}
+          {meta.map((part, i) => (
+            <span key={part} className="flex shrink-0 items-center gap-1.5">
+              {(image || i > 0) && <span aria-hidden>·</span>}
+              <span>{part}</span>
+            </span>
+          ))}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
@@ -115,4 +136,39 @@ export function ServiceDrawerHeader({
       </div>
     </div>
   )
+}
+
+/** Meta strip parts: mono image ref + a `·`-joined summary line. */
+function buildMeta(
+  nodeType: ServiceDrawerHeaderProps['nodeType'],
+  service: ServiceDrawerHeaderProps['service'],
+  database: ServiceDrawerHeaderProps['database'],
+): { image: string | null; meta: string[] } {
+  if (nodeType === 'service' && service) {
+    const sourceConfig = (service.sourceConfig ?? {}) as Record<string, unknown>
+    const ports = (service.ports ?? []) as PortMapping[]
+    const settings = (service.settings ?? {}) as ServiceSettings
+    const image =
+      service.sourceType === 'image'
+        ? `${(sourceConfig.image as string) ?? '?'}:${(sourceConfig.tag as string) ?? 'latest'}`
+        : ((sourceConfig.repository as string) ??
+          (sourceConfig.templateId as string) ??
+          service.sourceType)
+    const exposure =
+      settings.exposed === true
+        ? 'Public'
+        : (settings.ingressRules?.length ?? 0) > 0
+          ? `${settings.ingressRules?.length} routes`
+          : 'Private'
+    const meta = [`${ports.length} ${ports.length === 1 ? 'port' : 'ports'}`, exposure]
+    if (service.status === 'running') meta.push(`up ${formatCompactDuration(service.updatedAt)}`)
+    return { image, meta }
+  }
+  if (nodeType === 'database' && database) {
+    const label = DATABASE_TYPE_LABELS[database.type] ?? database.type
+    const meta = [database.version ? `${label} v${database.version}` : label, `:${database.port}`]
+    if (database.status === 'running') meta.push(`up ${formatCompactDuration(database.updatedAt)}`)
+    return { image: null, meta }
+  }
+  return { image: null, meta: [] }
 }

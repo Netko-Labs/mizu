@@ -51,3 +51,18 @@ export async function connectLogsStream(target: LogsStreamTarget): Promise<WebSo
   if (target.databaseId) params.set('databaseId', target.databaseId)
   return new WebSocket(`${wsUrl}/logs/stream?${params.toString()}`)
 }
+
+/**
+ * Open a native WebSocket to a service's interactive container shell. Mirrors
+ * `connectLogsStream`: auth rides `?token=`, a unique `?cid=` identifies the
+ * connection server-side, and the backend runs a cooked `sh` — the client
+ * sends raw keystrokes and writes back the ANSI output it streams.
+ */
+export async function connectServiceTerminal(serviceId: string): Promise<WebSocket | null> {
+  const token = await getNagareToken()
+  if (!token) return null
+  const wsUrl = getNagareUrl().replace(/^http/, 'ws')
+  const cid = crypto.randomUUID()
+  const params = new URLSearchParams({ token, cid, serviceId })
+  return new WebSocket(`${wsUrl}/services/terminal?${params.toString()}`)
+}

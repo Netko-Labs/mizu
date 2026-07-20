@@ -12,9 +12,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { useIngressUrl } from '../lib'
+import { DrawerSection } from '../shared'
 import type { SettingsTabProps } from './lib/types'
 import { ServiceIngressEditor } from './service-ingress-editor'
 
@@ -50,12 +50,9 @@ export function SettingsTab({
     onAction?.({ type: 'updateSettings', settings: { ...serviceSettings, ...patch } })
 
   return (
-    <div className="space-y-4 p-4">
-      <Card size="sm">
-        <CardHeader>
-          <CardTitle className="text-sm">General</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1.5">
+    <div className="space-y-3 p-4">
+      <DrawerSection title="General">
+        <div className="space-y-1.5">
           <EditablePropertyLine
             label="name"
             value={entity.name}
@@ -64,16 +61,12 @@ export function SettingsTab({
           <PropertyLine label="id" value={entity.id} mono copyable />
           <PropertyLine label="created" value={new Date(entity.createdAt).toLocaleString()} />
           <PropertyLine label="updated" value={new Date(entity.updatedAt).toLocaleString()} />
-        </CardContent>
-      </Card>
+        </div>
+      </DrawerSection>
 
       {nodeType === 'service' && service && service.sourceType === 'image' && (
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Source</CardTitle>
-            <CardDescription className="text-xs">Changes apply on the next deploy.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1.5">
+        <DrawerSection title="Source" description="Changes apply on the next deploy.">
+          <div className="space-y-1.5">
             <EditablePropertyLine
               label="image"
               value={(sourceConfig.image as string) ?? ''}
@@ -94,20 +87,16 @@ export function SettingsTab({
                 })
               }
             />
-          </CardContent>
-        </Card>
+          </div>
+        </DrawerSection>
       )}
 
       {nodeType === 'service' && service && (
-        <Card size="sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Networking</CardTitle>
-            <CardDescription className="text-xs">
-              Services are private by default. Expose publicly for the auto host, or add ingress
-              rules (rules replace the auto host and expose on their own).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <DrawerSection
+          title="Networking"
+          description="Services are private by default. Expose publicly for the auto host, or add ingress rules (rules replace the auto host and expose on their own)."
+        >
+          <div className="space-y-3">
             <div className="flex items-center justify-between rounded-md border border-border bg-background/60 px-2.5 py-2">
               <div className="text-xs text-foreground/90">
                 Expose publicly
@@ -132,29 +121,23 @@ export function SettingsTab({
               autoUrl={autoUrl}
               onChange={(rules) => saveSettings({ ingressRules: rules })}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </DrawerSection>
       )}
 
-      <Card size="sm" className="ring-destructive/30">
-        <CardHeader>
-          <CardTitle className="text-sm text-destructive">Danger zone</CardTitle>
-          <CardDescription className="text-xs">
-            Deleting removes the {nodeType}, its container, and its connections. This cannot be
-            undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={isActionPending}
-            onClick={() => setConfirmOpen(true)}
-          >
-            Delete {nodeType}
-          </Button>
-        </CardContent>
-      </Card>
+      <DrawerSection
+        title="Danger zone"
+        description={`Deleting removes the ${nodeType}, its container, and its connections. This cannot be undone.`}
+      >
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={isActionPending}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Delete {nodeType}
+        </Button>
+      </DrawerSection>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
