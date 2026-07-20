@@ -27,27 +27,33 @@ export function openContainerTerminal(
     stderr: 'pipe',
   })
 
+  let closed = false
   const decoder = new TextDecoder()
   const pump = async (stream: ReadableStream<Uint8Array>) => {
     const reader = stream.getReader()
     for (;;) {
       const { value, done } = await reader.read()
       if (done) break
-      if (value) onData(decoder.decode(value))
+      // Drop late output after kill (the CLI emits a benign signal error).
+      if (value && !closed) onData(decoder.decode(value))
     }
   }
   void pump(proc.stdout)
   void pump(proc.stderr)
-  void proc.exited.then(onExit)
+  void proc.exited.then(() => {
+    if (!closed) onExit()
+  })
 
   const stdin = proc.stdin
 
   return {
     send(line: string) {
+      if (closed) return
       stdin.write(`${line}\n`)
       void stdin.flush()
     },
     kill() {
+      closed = true
       try {
         stdin.end()
       } catch {
