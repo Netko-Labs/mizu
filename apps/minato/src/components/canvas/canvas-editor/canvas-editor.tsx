@@ -145,7 +145,7 @@ export function CanvasEditor({
                 <IconDatabase className="size-6" />
               </div>
               <p className="mt-4 text-sm text-neutral-600">
-                Right-click or drag from sidebar to add components
+                Press Add in the toolbar or right-click to create components
               </p>
               <p className="mt-1.5 text-xs text-neutral-700">Build your architecture visually</p>
             </div>

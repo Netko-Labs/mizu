@@ -1,4 +1,4 @@
-import { IconChevronsLeft, IconCommand } from '@tabler/icons-react'
+import { IconChevronsLeft, IconChevronsRight, IconCommand } from '@tabler/icons-react'
 import { useCommandPalette } from '@/components/command-palette'
 import {
   Sidebar,
@@ -61,7 +61,18 @@ export function NavSidebar() {
         className={cn('border-b border-neutral-800/60', collapsed ? 'px-1 py-2' : 'p-0')}
       >
         {collapsed ? (
-          <WorkspaceSwitcher collapsed />
+          <div className="flex flex-col items-center gap-1">
+            <WorkspaceSwitcher collapsed />
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              className="flex size-6 items-center justify-center rounded-md text-neutral-700 outline-none transition-colors hover:bg-neutral-900 hover:text-neutral-400 focus-visible:ring-2 focus-visible:ring-blue-500/40"
+            >
+              <IconChevronsRight className="size-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
         ) : (
           <div className="flex h-11 items-center gap-1.5 px-3 font-mono">
             <MizuBrand />

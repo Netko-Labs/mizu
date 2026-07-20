@@ -7,6 +7,7 @@ export interface SettingsTabProps {
   nodeType: DrawerNodeType
   service: Serialized<Service> | null
   database: Serialized<Database> | null
+  projectSlug: string
   onAction?: (action: PropertyAction) => void
   isActionPending?: boolean
 }

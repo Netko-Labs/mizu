@@ -1,4 +1,4 @@
-import type { Database, Service } from '@mizu/nagare-domain'
+import type { Database, IngressRule, Service } from '@mizu/nagare-domain'
 import type { Icon } from '@tabler/icons-react'
 import type { PropertyAction } from '@/components/canvas/lib'
 import type { Serialized } from '@/shared/api'
@@ -58,4 +58,30 @@ export interface UseServiceDrawerOptions {
 export interface UseServiceDrawerResult {
   tab: DrawerTab
   setTab: (tab: DrawerTab) => void
+}
+
+export interface ServiceIngressEditorProps {
+  rules: IngressRule[]
+  ports: number[]
+  running: boolean
+  autoUrl: string | null
+  onChange: (rules: IngressRule[]) => void
+}
+
+export interface UseIngressRulesOptions {
+  ports: number[]
+  rules: IngressRule[]
+  onChange: (rules: IngressRule[]) => void
+}
+
+export interface UseIngressRulesResult {
+  port: number
+  setPort: (port: number) => void
+  hostType: IngressRule['hostType']
+  setHostType: (hostType: IngressRule['hostType']) => void
+  host: string
+  setHost: (host: string) => void
+  canAdd: boolean
+  addRule: () => void
+  removeRule: (id: string) => void
 }

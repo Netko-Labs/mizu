@@ -11,17 +11,19 @@ export function ActivityFeed({ projectId, onClose }: ActivityFeedProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-        <span className="text-xs font-medium text-foreground">Activity</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-          aria-label="Close activity"
-        >
-          <IconX className="size-3" />
-        </button>
-      </div>
+      {onClose && (
+        <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+          <span className="text-xs font-medium text-foreground">Activity</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Close activity"
+          >
+            <IconX className="size-3" />
+          </button>
+        </div>
+      )}
       <ScrollArea className="min-h-0 flex-1">
         {isLoading && (
           <div className="flex items-center gap-2 px-3 py-6 text-xs text-muted-foreground">

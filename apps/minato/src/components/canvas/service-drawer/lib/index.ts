@@ -1,3 +1,6 @@
+export * from './hooks/use-ingress-rules'
+export * from './hooks/use-ingress-url'
 export * from './hooks/use-service-drawer'
 export * from './types'
+export * from './utils'
 export * from './values'

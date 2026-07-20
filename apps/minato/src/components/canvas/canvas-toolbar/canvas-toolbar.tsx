@@ -1,11 +1,9 @@
 import {
   IconArrowLeft,
   IconBolt,
-  IconCode,
   IconFocusCentered,
   IconGrid3x3,
-  IconHistory,
-  IconLayoutSidebar,
+  IconPlus,
   IconSettings,
 } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
@@ -22,13 +20,8 @@ interface CanvasToolbarProps {
   activeEnvironmentId: string
   onEnvironmentChange: (id: string) => void
   nodeCount: number
-  sidebarOpen: boolean
-  yamlOpen: boolean
-  activityOpen: boolean
-  onToggleSidebar: () => void
-  onToggleYaml: () => void
-  onToggleActivity: () => void
-  onOpenSettings: () => void
+  onOpenAdd: () => void
+  onOpenProject: () => void
   onDeploy: () => void
 }
 
@@ -70,13 +63,8 @@ export function CanvasToolbar({
   activeEnvironmentId,
   onEnvironmentChange,
   nodeCount,
-  sidebarOpen,
-  yamlOpen,
-  activityOpen,
-  onToggleSidebar,
-  onToggleYaml,
-  onToggleActivity,
-  onOpenSettings,
+  onOpenAdd,
+  onOpenProject,
   onDeploy,
 }: CanvasToolbarProps) {
   const { showGrid, toggleGrid } = useCanvas()
@@ -108,50 +96,27 @@ export function CanvasToolbar({
 
       {/* Center: canvas tools */}
       <div className="flex items-center gap-0.5 rounded-xl border border-blue-500/10 bg-blue-500/[0.03] px-1 py-0.5">
-        <ToolbarButton
-          active={sidebarOpen}
-          onClick={onToggleSidebar}
-          title="Toggle sidebar"
-          label="Sidebar"
-        >
-          <IconLayoutSidebar className="size-3.5" />
-        </ToolbarButton>
-
-        <div className="mx-0.5 h-4 w-px bg-blue-500/10" />
-
         <ToolbarButton active={showGrid} onClick={toggleGrid} title="Toggle grid" label="Grid">
           <IconGrid3x3 className="size-3.5" />
         </ToolbarButton>
 
         <FitViewButton />
-
-        <div className="mx-0.5 h-4 w-px bg-blue-500/10" />
-
-        <ToolbarButton
-          active={yamlOpen}
-          onClick={onToggleYaml}
-          title="Toggle YAML preview"
-          label="YAML"
-        >
-          <IconCode className="size-3.5" />
-        </ToolbarButton>
-
-        <ToolbarButton
-          active={activityOpen}
-          onClick={onToggleActivity}
-          title="Toggle activity feed"
-          label="Activity"
-        >
-          <IconHistory className="size-3.5" />
-        </ToolbarButton>
       </div>
 
-      {/* Right: project settings + deploy */}
+      {/* Right: add + project config + deploy */}
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={onOpenSettings}
-          title="Project settings"
+          onClick={onOpenAdd}
+          className="flex items-center gap-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-1.5 text-xs font-medium text-blue-300 transition-all hover:border-blue-500/40 hover:bg-blue-500/10"
+        >
+          <IconPlus className="size-3.5" />
+          Add
+        </button>
+        <button
+          type="button"
+          onClick={onOpenProject}
+          title="Project configuration"
           className="flex items-center rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-blue-500/10 hover:text-neutral-300"
         >
           <IconSettings className="size-4" />

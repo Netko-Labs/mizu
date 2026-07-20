@@ -3,7 +3,7 @@ import { IconPlus, IconX } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { instanceSettingsQueries } from '@/shared/api'
-import { type ServiceIngressEditorProps, sanitizeResourceName, useIngressRules } from './lib'
+import { type ServiceIngressEditorProps, sanitizeResourceName, useIngressRules } from '../lib'
 
 /**
  * Manual public ingress editor. Each rule maps a chosen service port to a

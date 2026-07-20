@@ -1,3 +1,4 @@
+import type { IngressRule, PortMapping } from '@mizu/nagare-domain'
 import { useState } from 'react'
 import { EditablePropertyLine, PropertyLine } from '@/components/canvas/shared'
 import {
@@ -12,18 +13,30 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useIngressUrl } from '../lib'
 import type { SettingsTabProps } from './lib/types'
+import { ServiceIngressEditor } from './service-ingress-editor'
 
-/** Settings: rename + info rows + danger zone delete. */
+/** Grouped config: General / Source / Networking / Danger zone. */
 export function SettingsTab({
   nodeType,
   service,
   database,
+  projectSlug,
   onAction,
   isActionPending,
 }: SettingsTabProps) {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const entity = nodeType === 'service' ? service : database
+  const sourceConfig = (service?.sourceConfig ?? {}) as Record<string, unknown>
+  const ports = ((service?.ports ?? []) as PortMapping[]).map((p) => p.container)
+  const ingressRules =
+    ((service?.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
+  const autoUrl = useIngressUrl(
+    service?.name ?? '',
+    projectSlug,
+    !!service && service.status === 'running' && ports.length > 0 && ingressRules.length === 0,
+  )
   if (!entity) return null
 
   return (
@@ -43,6 +56,57 @@ export function SettingsTab({
           <PropertyLine label="updated" value={new Date(entity.updatedAt).toLocaleString()} />
         </CardContent>
       </Card>
+
+      {nodeType === 'service' && service && service.sourceType === 'image' && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle className="text-sm">Source</CardTitle>
+            <CardDescription className="text-xs">Changes apply on the next deploy.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            <EditablePropertyLine
+              label="image"
+              value={(sourceConfig.image as string) ?? ''}
+              onSave={(image) =>
+                onAction?.({
+                  type: 'updateSourceConfig',
+                  sourceConfig: { image, tag: sourceConfig.tag as string | undefined },
+                })
+              }
+            />
+            <EditablePropertyLine
+              label="tag"
+              value={(sourceConfig.tag as string) ?? 'latest'}
+              onSave={(tag) =>
+                onAction?.({
+                  type: 'updateSourceConfig',
+                  sourceConfig: { image: sourceConfig.image as string, tag },
+                })
+              }
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {nodeType === 'service' && service && (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle className="text-sm">Networking</CardTitle>
+            <CardDescription className="text-xs">
+              Public ingress routes for this service's ports. Rules replace the auto-derived host.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ServiceIngressEditor
+              rules={ingressRules}
+              ports={ports}
+              running={service.status === 'running'}
+              autoUrl={autoUrl}
+              onChange={(rules) => onAction?.({ type: 'updateIngress', ingressRules: rules })}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card size="sm" className="ring-destructive/30">
         <CardHeader>

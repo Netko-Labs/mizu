@@ -118,6 +118,7 @@ export function ServiceDrawer({
               nodeType={nodeType}
               service={service}
               database={database}
+              projectSlug={projectSlug}
               onAction={onAction}
               isActionPending={isActionPending}
             />

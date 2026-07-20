@@ -1,8 +1,8 @@
 import type { DatabaseType } from '@mizu/nagare-domain'
 import { EditablePropertyLine, PropertyLine } from '@/components/canvas/shared'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DATABASE_TYPE_LABELS } from '../lib'
-import { type DatabaseOverviewProps, parseDatabaseCredentials } from './lib'
+import { DATABASE_TYPE_LABELS, parseDatabaseCredentials } from '../lib'
+import type { DatabaseOverviewProps } from './lib'
 
 /** Database Overview: engine + connection + container cards. */
 export function DatabaseOverview({ database, onAction }: DatabaseOverviewProps) {

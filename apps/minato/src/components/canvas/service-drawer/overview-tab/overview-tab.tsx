@@ -1,12 +1,17 @@
 import type { IngressRule, PortMapping, ServiceSourceType, VolumeMount } from '@mizu/nagare-domain'
-import { EditablePropertyLine, PropertyLine, SourceTypeIcon } from '@/components/canvas/shared'
+import { useQuery } from '@tanstack/react-query'
+import { PropertyLine, SourceTypeIcon } from '@/components/canvas/shared'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { type OverviewTabProps, useIngressUrl } from './lib'
-import { ServiceIngressEditor } from './service-ingress-editor'
+import { instanceSettingsQueries } from '@/shared/api'
+import { sanitizeResourceName, useIngressUrl } from '../lib'
+import type { OverviewTabProps } from './lib'
 
-/** Service Overview: Source / Networking / Volumes / Container cards. */
-export function OverviewTab({ service, projectSlug, onAction }: OverviewTabProps) {
+/**
+ * Read-only service summary: what's deployed and where it's reachable.
+ * Editing (image, ingress rules, variables) lives in the Settings tab.
+ */
+export function OverviewTab({ service, projectSlug }: OverviewTabProps) {
   const sourceType = service.sourceType as ServiceSourceType
   const sourceConfig = service.sourceConfig as Record<string, unknown>
   const ports = (service.ports ?? []) as PortMapping[]
@@ -14,16 +19,28 @@ export function OverviewTab({ service, projectSlug, onAction }: OverviewTabProps
   const persistentVolumes = (sourceConfig.volumes as string[] | undefined) ?? []
   const ingressRules =
     ((service.settings ?? {}) as { ingressRules?: IngressRule[] }).ingressRules ?? []
-  const ingressUrl = useIngressUrl(
+  const running = service.status === 'running'
+  const autoUrl = useIngressUrl(
     service.name,
     projectSlug,
-    service.status === 'running' && ports.length > 0,
+    running && ports.length > 0 && ingressRules.length === 0,
   )
+  const { data: instanceSettings } = useQuery(instanceSettingsQueries.get())
+  const baseDomain = instanceSettings?.domain || 'localhost'
 
-  const sourceTarget =
-    sourceType === 'git'
-      ? ((sourceConfig.repository as string) ?? 'not set')
-      : ((sourceConfig.templateId as string) ?? 'not set')
+  const sourceRef =
+    sourceType === 'image'
+      ? `${(sourceConfig.image as string) ?? '?'}:${(sourceConfig.tag as string) ?? 'latest'}`
+      : sourceType === 'git'
+        ? ((sourceConfig.repository as string) ?? 'not set')
+        : ((sourceConfig.templateId as string) ?? 'not set')
+
+  const ruleUrl = (rule: IngressRule): string => {
+    const host =
+      rule.hostType === 'subdomain' ? `${sanitizeResourceName(rule.host)}.${baseDomain}` : rule.host
+    const scheme = rule.hostType === 'custom' || baseDomain !== 'localhost' ? 'https' : 'http'
+    return `${scheme}://${host}`
+  }
 
   return (
     <div className="space-y-4 p-4">
@@ -34,33 +51,8 @@ export function OverviewTab({ service, projectSlug, onAction }: OverviewTabProps
             Source
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          {sourceType === 'image' ? (
-            <>
-              <EditablePropertyLine
-                label="image"
-                value={(sourceConfig.image as string) ?? ''}
-                onSave={(image) =>
-                  onAction?.({
-                    type: 'updateSourceConfig',
-                    sourceConfig: { image, tag: sourceConfig.tag as string | undefined },
-                  })
-                }
-              />
-              <EditablePropertyLine
-                label="tag"
-                value={(sourceConfig.tag as string) ?? 'latest'}
-                onSave={(tag) =>
-                  onAction?.({
-                    type: 'updateSourceConfig',
-                    sourceConfig: { image: sourceConfig.image as string, tag },
-                  })
-                }
-              />
-            </>
-          ) : (
-            <PropertyLine label="target" value={sourceTarget} mono copyable />
-          )}
+        <CardContent>
+          <PropertyLine label={sourceType} value={sourceRef} mono copyable />
         </CardContent>
       </Card>
 
@@ -86,13 +78,28 @@ export function OverviewTab({ service, projectSlug, onAction }: OverviewTabProps
               ))}
             </div>
           )}
-          <ServiceIngressEditor
-            rules={ingressRules}
-            ports={ports.map((p) => p.container)}
-            running={service.status === 'running'}
-            autoUrl={ingressUrl}
-            onChange={(rules) => onAction?.({ type: 'updateIngress', ingressRules: rules })}
-          />
+          {ingressRules.map((rule) => (
+            <a
+              key={rule.id}
+              href={ruleUrl(rule)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 truncate rounded-md border border-primary/20 bg-primary/5 px-2 py-1 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
+            >
+              <span className="truncate">{ruleUrl(rule)}</span>
+              <span className="ml-auto shrink-0 text-muted-foreground">:{rule.port}</span>
+            </a>
+          ))}
+          {ingressRules.length === 0 && autoUrl && (
+            <a
+              href={autoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block truncate rounded-md border border-primary/20 bg-primary/5 px-2 py-1 font-mono text-[11px] text-primary transition-colors hover:border-primary/40"
+            >
+              {autoUrl}
+            </a>
+          )}
         </CardContent>
       </Card>
 

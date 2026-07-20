@@ -3,7 +3,8 @@ import type { Serialized } from '@/shared/api'
 
 export interface ActivityFeedProps {
   projectId: string
-  onClose: () => void
+  /** Renders the panel header with a close button; omit when embedded. */
+  onClose?: () => void
 }
 
 export interface ActivityFeedItemProps {
