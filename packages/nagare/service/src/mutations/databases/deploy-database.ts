@@ -35,7 +35,7 @@ const DATABASE_IMAGES: Record<DatabaseType, string> = {
   mariadb: 'mariadb',
 }
 
-const DEFAULT_PORTS: Record<DatabaseType, number> = {
+export const DEFAULT_PORTS: Record<DatabaseType, number> = {
   postgres: 5432,
   mysql: 3306,
   redis: 6379,

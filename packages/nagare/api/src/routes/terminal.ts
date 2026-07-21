@@ -13,10 +13,26 @@ import { TerminalLineEditor } from '../shared/terminal-line-editor'
 interface Session {
   terminal: TerminalSession
   editor: TerminalLineEditor
+  idleTimer?: ReturnType<typeof setTimeout>
 }
+
+/**
+ * A session that outlives its tab (or hangs against a dead container VM) would
+ * otherwise leak its `container exec` forever — close it after this long
+ * without a keystroke.
+ */
+const IDLE_TIMEOUT_MS = 20 * 60_000
 
 // Keyed on the client-supplied `cid` (Elysia 2's ws.id is unreliable).
 const sessions = new Map<string, Session>()
+
+function armIdleTimer(session: Session, ws: { send(data: string): void; close(): void }): void {
+  clearTimeout(session.idleTimer)
+  session.idleTimer = setTimeout(() => {
+    ws.send('\r\n\x1b[90m[session closed after 20 minutes of inactivity]\x1b[0m\r\n')
+    ws.close()
+  }, IDLE_TIMEOUT_MS)
+}
 
 /**
  * Interactive shell over WebSocket for the drawer's Console (wterm frontend).
@@ -63,7 +79,9 @@ export const terminalRoutes = new Elysia({ name: 'terminal' })
         echo: (data) => ws.send(data),
         submit: (line) => terminal.send(line),
       })
-      sessions.set(cid, { terminal, editor })
+      const session: Session = { terminal, editor }
+      armIdleTimer(session, ws)
+      sessions.set(cid, session)
       ws.send(
         '\x1b[90mConnected — interactive sh (no PTY: full-screen apps unsupported)\x1b[0m\r\n',
       )
@@ -71,11 +89,13 @@ export const terminalRoutes = new Elysia({ name: 'terminal' })
     message(ws, message) {
       const session = sessions.get(ws.query.cid)
       if (!session) return
+      armIdleTimer(session, ws)
       session.editor.feed(typeof message === 'string' ? message : String(message))
     },
     close(ws) {
       const session = sessions.get(ws.query.cid)
       if (session) {
+        clearTimeout(session.idleTimer)
         session.terminal.kill()
         sessions.delete(ws.query.cid)
       }

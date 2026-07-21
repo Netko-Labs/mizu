@@ -3,6 +3,7 @@ export * from './constants'
 export {
   createContainer,
   execInContainer,
+  forceRemoveContainer,
   getContainerLogs,
   getContainerStatus,
   listContainers,

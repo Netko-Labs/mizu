@@ -125,6 +125,38 @@ export async function removeContainer(containerId: string, force = false): Promi
   }
 }
 
+/**
+ * Remove a container even when its VM is wedged. A frozen vminitd makes plain
+ * `stop`/`rm` hang forever, so every step is time-bounded: graceful stop →
+ * kill the host-side `container-runtime-linux` helper for this container →
+ * rm. Used by the supervisor to recycle containers that stopped answering.
+ */
+export async function forceRemoveContainer(containerId: string): Promise<void> {
+  try {
+    await runtimeCli(['stop', '-t', '5', containerId], { timeoutMs: 20_000 })
+  } catch (error) {
+    if (error instanceof RuntimeError && error.code === 'TIMEOUT') {
+      logger.warn({ containerId }, 'Stop hung — killing the container VM host process')
+      // The helper's cmdline ends with `--uuid <containerId>`; $-anchor so one
+      // container id never matches another that has it as a prefix.
+      await Bun.spawn(['pkill', '-9', '-f', `uuid ${containerId}$`]).exited
+    } else if (
+      !(
+        error instanceof RuntimeError &&
+        (error.code === 'NOT_FOUND' || error.code === 'NOT_RUNNING')
+      )
+    ) {
+      logger.warn({ containerId, error: String(error) }, 'Stop failed — continuing to rm')
+    }
+  }
+  try {
+    await runtimeCli(['rm', containerId], { timeoutMs: 20_000 })
+  } catch (error) {
+    if (error instanceof RuntimeError && error.code === 'NOT_FOUND') return
+    throw error
+  }
+}
+
 /** Map an Apple container status.state to our ContainerState */
 export function mapContainerState(state: string | undefined): ContainerState {
   switch (state) {

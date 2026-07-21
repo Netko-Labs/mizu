@@ -9,10 +9,25 @@ import { databaseTable, serviceConnectionTable, serviceTable } from '@mizu/nagar
 import { db } from '@mizu/nagare-repository'
 import { eq, isNotNull } from 'drizzle-orm'
 import { syncIngress } from '../ingress'
-import { deployDatabase } from '../mutations/databases/deploy-database'
+import { DEFAULT_PORTS, deployDatabase } from '../mutations/databases/deploy-database'
 import { deployService } from '../mutations/services/deploy-service'
-import { type ContainerState, listContainers, startContainer, stopContainer } from '../runtime'
-import { BACKOFF_BASE_MS, BACKOFF_CAP_MS, MAX_RESTART_ATTEMPTS, MISS_THRESHOLD } from './constants'
+import {
+  type ContainerStatus,
+  forceRemoveContainer,
+  listContainers,
+  startContainer,
+  stopContainer,
+} from '../runtime'
+import {
+  BACKOFF_BASE_MS,
+  BACKOFF_CAP_MS,
+  MAX_RESTART_ATTEMPTS,
+  MISS_THRESHOLD,
+  PROBE_FAILURE_THRESHOLD,
+  PROBE_GRACE_MS,
+  PROBE_TIMEOUT_MS,
+} from './constants'
+import { probeTcp } from './probe'
 import type { EntityRecord, RestartTracker, SupervisorState } from './types'
 
 const logger = createLogger('supervisor')
@@ -27,7 +42,7 @@ const TRANSITIONAL = new Set(['building', 'stopping'])
 function getTracker(state: SupervisorState, entityId: string): RestartTracker {
   let tracker = state.trackers.get(entityId)
   if (!tracker) {
-    tracker = { attempts: 0, nextAttemptAt: 0, misses: 0, exhausted: false }
+    tracker = { attempts: 0, nextAttemptAt: 0, misses: 0, probeFailures: 0, exhausted: false }
     state.trackers.set(entityId, tracker)
   }
   return tracker
@@ -47,6 +62,12 @@ async function setEntityStatus(entity: EntityRecord, status: string): Promise<vo
   }
 }
 
+/** First declared TCP port — what the liveness probe dials. */
+function serviceProbePort(ports: unknown): number | null {
+  const list = (ports as Array<{ container?: number; protocol?: string }> | null) ?? []
+  return list.find((p) => p.container && (p.protocol ?? 'tcp') === 'tcp')?.container ?? null
+}
+
 async function loadDesiredState(): Promise<EntityRecord[]> {
   const [services, databases] = await Promise.all([
     db
@@ -54,6 +75,7 @@ async function loadDesiredState(): Promise<EntityRecord[]> {
         id: serviceTable.id,
         status: serviceTable.status,
         containerId: serviceTable.containerId,
+        ports: serviceTable.ports,
       })
       .from(serviceTable)
       .where(isNotNull(serviceTable.containerId)),
@@ -62,6 +84,8 @@ async function loadDesiredState(): Promise<EntityRecord[]> {
         id: databaseTable.id,
         status: databaseTable.status,
         containerId: databaseTable.containerId,
+        type: databaseTable.type,
+        port: databaseTable.port,
       })
       .from(databaseTable)
       .where(isNotNull(databaseTable.containerId)),
@@ -73,12 +97,14 @@ async function loadDesiredState(): Promise<EntityRecord[]> {
       id: s.id,
       status: s.status,
       containerId: s.containerId as string,
+      probePort: serviceProbePort(s.ports),
     })),
     ...databases.map((d) => ({
       kind: 'database' as const,
       id: d.id,
       status: d.status,
       containerId: d.containerId as string,
+      probePort: d.port ?? DEFAULT_PORTS[d.type],
     })),
   ]
 }
@@ -188,16 +214,68 @@ async function healMissing(entity: EntityRecord, state: SupervisorState): Promis
 }
 
 /**
+ * The runtime reports a wedged container VM as "running", so "running" alone
+ * isn't liveness — recycle the container (force-remove + redeploy) after the
+ * TCP probe fails enough consecutive passes.
+ */
+async function healUnresponsive(entity: EntityRecord, state: SupervisorState): Promise<void> {
+  const tracker = getTracker(state, entity.id)
+  if (tracker.exhausted || Date.now() < tracker.nextAttemptAt) return
+
+  tracker.attempts += 1
+  tracker.probeFailures = 0
+  tracker.nextAttemptAt =
+    Date.now() + Math.min(BACKOFF_BASE_MS * 2 ** (tracker.attempts - 1), BACKOFF_CAP_MS)
+
+  logger.warn(
+    { entity: entity.id, kind: entity.kind, port: entity.probePort, attempt: tracker.attempts },
+    'Container reports running but is not accepting connections — recycling',
+  )
+
+  try {
+    await forceRemoveContainer(entity.containerId)
+    if (entity.kind === 'service') {
+      const result = await deployService(entity.id, { trigger: 'supervisor' })
+      if (!result.success) throw new Error(result.error ?? 'deploy failed')
+    } else {
+      await deployDatabase(entity.id)
+    }
+    tracker.attempts = 0
+    tracker.nextAttemptAt = 0
+    await redeployDependents(entity)
+  } catch (error) {
+    logger.error({ entity: entity.id, error: String(error) }, 'Recycle attempt failed')
+    if (tracker.attempts >= MAX_RESTART_ATTEMPTS) {
+      tracker.exhausted = true
+      await setEntityStatus(entity, 'error')
+      logger.error({ entity: entity.id }, 'Recycle attempts exhausted — marked error')
+    }
+  }
+}
+
+/**
+ * Liveness for a container the runtime says is running. True = healthy or not
+ * probeable (no TCP port, no IP yet, or still inside the boot grace window).
+ */
+async function isResponsive(entity: EntityRecord, container: ContainerStatus): Promise<boolean> {
+  if (!entity.probePort || !container.ipv4Address) return true
+  const startedAt = container.startedAt ? Date.parse(container.startedAt) : Number.NaN
+  if (Number.isFinite(startedAt) && Date.now() - startedAt < PROBE_GRACE_MS) return true
+  return probeTcp(container.ipv4Address, entity.probePort, PROBE_TIMEOUT_MS)
+}
+
+/**
  * Run one reconcile pass. Errors are contained per entity so one bad
  * container never blocks the rest.
  */
 export async function reconcileOnce(state: SupervisorState): Promise<void> {
   const [entities, containers] = await Promise.all([loadDesiredState(), listContainers()])
-  const actual = new Map<string, ContainerState>(containers.map((c) => [c.id, c.state]))
+  const actual = new Map<string, ContainerStatus>(containers.map((c) => [c.id, c]))
 
   for (const entity of entities) {
     const tracker = state.trackers.get(entity.id)
-    const actualState = actual.get(entity.containerId)
+    const container = actual.get(entity.containerId)
+    const actualState = container?.state
 
     try {
       if (TRANSITIONAL.has(entity.status)) continue
@@ -208,8 +286,20 @@ export async function reconcileOnce(state: SupervisorState): Promise<void> {
       }
 
       if (WANTS_RUNNING.has(entity.status)) {
-        if (actualState === 'running') {
-          if (tracker) state.trackers.delete(entity.id)
+        if (actualState === 'running' && container) {
+          if (await isResponsive(entity, container)) {
+            if (tracker) state.trackers.delete(entity.id)
+          } else {
+            const t = getTracker(state, entity.id)
+            t.probeFailures += 1
+            logger.warn(
+              { entity: entity.id, port: entity.probePort, failures: t.probeFailures },
+              'Liveness probe failed',
+            )
+            if (t.probeFailures >= PROBE_FAILURE_THRESHOLD) {
+              await healUnresponsive(entity, state)
+            }
+          }
         } else if (actualState === undefined) {
           await healMissing(entity, state)
         } else {

@@ -11,6 +11,8 @@ export interface RestartTracker {
   attempts: number
   nextAttemptAt: number
   misses: number
+  /** Consecutive reconcile passes where the TCP liveness probe failed */
+  probeFailures: number
   exhausted: boolean
 }
 
@@ -25,4 +27,6 @@ export interface EntityRecord {
   id: string
   status: string
   containerId: string
+  /** Container-side TCP port the liveness probe dials; null = don't probe */
+  probePort: number | null
 }
