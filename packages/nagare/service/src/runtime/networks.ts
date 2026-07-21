@@ -38,7 +38,8 @@ export function deployNamespace(
   return isDefaultEnv ? project : `${project}-${sanitizeName(envSlug)}`
 }
 
-function namespaceNetworkName(namespace: string): string {
+/** Network name for a deploy namespace (`mizu-<project>[-<env>]`). */
+export function deployNetworkName(namespace: string): string {
   return `mizu-${sanitizeName(namespace)}`
 }
 
@@ -72,7 +73,7 @@ export async function listNetworkNames(): Promise<string[]> {
  * environments.
  */
 export async function ensureDeployNetwork(namespace: string): Promise<string> {
-  const networkName = namespaceNetworkName(namespace)
+  const networkName = deployNetworkName(namespace)
 
   if (!(await networkExists(networkName))) {
     try {
@@ -86,4 +87,26 @@ export async function ensureDeployNetwork(namespace: string): Promise<string> {
   }
 
   return networkName
+}
+
+/**
+ * Remove a network by name. Best-effort: NOT_FOUND is a no-op and other
+ * failures (e.g. a container still attached) only warn — the ingress sync
+ * prune retries on a later pass once the attachment is gone.
+ */
+export async function removeNetworkByName(networkName: string): Promise<boolean> {
+  try {
+    await runtimeCli(['network', 'rm', networkName])
+    logger.info({ networkName }, 'Removed network')
+    return true
+  } catch (error) {
+    if (error instanceof RuntimeError && error.code === 'NOT_FOUND') return true
+    logger.warn({ networkName, error: String(error) }, 'Failed to remove network')
+    return false
+  }
+}
+
+/** Remove a deploy namespace's network (see removeNetworkByName). */
+export async function removeDeployNetwork(namespace: string): Promise<boolean> {
+  return removeNetworkByName(deployNetworkName(namespace))
 }

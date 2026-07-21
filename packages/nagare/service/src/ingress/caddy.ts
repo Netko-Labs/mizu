@@ -7,14 +7,20 @@
 
 import { createLogger } from '@mizu/logger'
 import { nagareEnvConfig } from '@mizu/nagare-config'
+import { environmentTable, projectTable } from '@mizu/nagare-domain'
+import { db } from '@mizu/nagare-repository'
+import { eq } from 'drizzle-orm'
 import {
   createVolume,
+  deployNamespace,
+  deployNetworkName,
   type InspectPayload,
   listNetworkNames,
   MIZU_LABELS,
   pullImage,
   RuntimeError,
   removeContainer,
+  removeNetworkByName,
   runtimeCli,
   runtimeCliJson,
   startContainer,
@@ -31,9 +37,36 @@ import {
 
 const logger = createLogger('ingress:caddy')
 
+/**
+ * Networks the ingress container should attach to: only those belonging to a
+ * live project environment. Attaching every `mizu-*` network on the box would
+ * count stale ones (from deleted projects) against the VM NIC limit until
+ * caddy can't boot. Strays get a best-effort prune here so the box converges
+ * even after a crash left one behind.
+ */
 async function desiredNetworks(): Promise<string[]> {
-  const names = await listNetworkNames()
-  return names.filter((name) => name.startsWith('mizu-')).sort()
+  const existing = (await listNetworkNames()).filter((name) => name.startsWith('mizu-'))
+  const rows = await db
+    .select({
+      projectSlug: projectTable.slug,
+      envSlug: environmentTable.slug,
+      isDefault: environmentTable.isDefault,
+    })
+    .from(environmentTable)
+    .innerJoin(projectTable, eq(environmentTable.projectId, projectTable.id))
+  const live = new Set(
+    rows.map((row) =>
+      deployNetworkName(deployNamespace(row.projectSlug, row.envSlug, row.isDefault)),
+    ),
+  )
+
+  const strays = existing.filter((name) => !live.has(name))
+  for (const stray of strays) {
+    logger.warn({ network: stray }, 'Network has no live project — pruning')
+    await removeNetworkByName(stray)
+  }
+
+  return existing.filter((name) => live.has(name)).sort()
 }
 
 async function inspectIngress(): Promise<InspectPayload | null> {

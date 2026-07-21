@@ -22,7 +22,15 @@ export {
 } from './env-resolution'
 export { execCommandInContainer } from './exec'
 export { pullImage, qualifyImageRef } from './images'
-export { deployNamespace, ensureDeployNetwork, listNetworkNames, sanitizeName } from './networks'
+export {
+  deployNamespace,
+  deployNetworkName,
+  ensureDeployNetwork,
+  listNetworkNames,
+  removeDeployNetwork,
+  removeNetworkByName,
+  sanitizeName,
+} from './networks'
 export {
   type ProcSample,
   parseProcSample,
